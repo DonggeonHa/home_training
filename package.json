@@ -10,8 +10,13 @@
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "test:catalog-coverage": "vitest run src/domain/catalog/catalog.test.ts src/domain/catalog/catalog-validation.test.ts src/domain/catalog/catalog-runtime-validation.test.ts --coverage.enabled --coverage.provider=v8",
-    "react-doctor": "react-doctor"
+    "test:coverage": "vitest run --coverage.enabled --coverage.provider=v8 --coverage.branches=80 --coverage.functions=80 --coverage.lines=80 --coverage.statements=80",
+    "test:domain-storage-coverage": "vitest run src/domain src/storage --coverage.enabled --coverage.provider=v8 --coverage.include=src/domain/** --coverage.include=src/storage/** --coverage.branches=90 --coverage.functions=90 --coverage.lines=90 --coverage.statements=90",
+    "test:catalog-coverage": "vitest run -c vitest.catalog.config.ts src/domain/catalog/catalog.test.ts src/domain/catalog/catalog-validation.test.ts src/domain/catalog/catalog-runtime-validation.test.ts --coverage.enabled --coverage.provider=v8",
+    "react-doctor": "react-doctor",
+    "audit:react-doctor": "node scripts/audit/react-doctor.mjs",
+    "audit:react-scan": "node scripts/audit/react-scan-lite.mjs",
+    "audit:lighthouse": "node scripts/audit/lighthouse-real-chrome.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "latest",
@@ -33,6 +38,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "0.34.6",
     "jsdom": "^26.1.0",
+    "lighthouse": "^13.4.1",
     "playwright": "latest",
     "react-doctor": "latest",
     "react-grab": "latest",

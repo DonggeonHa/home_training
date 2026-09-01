@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "**"
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium chrome
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit and integration coverage
+        run: pnpm test:coverage
+      - name: Domain and storage coverage
+        run: pnpm test:domain-storage-coverage
+      - name: Catalog coverage
+        run: pnpm test:catalog-coverage
+      - name: Build
+        run: pnpm build
+      - name: Playwright Chromium
+        run: pnpm exec playwright test --project=chromium
+      - name: Todo11 visual harness
+        run: pnpm exec playwright test -c src/features/dashboard/todo11-playwright.config.ts --project=chromium
+      - name: React Doctor performance gate
+        run: pnpm audit:react-doctor
+      - name: React Scan runtime gate
+        run: pnpm audit:react-scan
+      - name: Lighthouse real Chrome gate
+        run: pnpm audit:lighthouse
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: qa-evidence
+          path: |
+            .omo/evidence/home-training/task-12/
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore

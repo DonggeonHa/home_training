@@ -25,12 +25,12 @@ export type ConfirmAssessmentInput = {
 }
 
 export function evaluateAssessment(input: EvaluateAssessmentInput): AssessmentResult {
-  const passedLevels = input.attempts
-    .filter((attempt) => attempt.level <= input.maxEligibleLevel)
-    .filter(entryMeetsMinimum)
-    .map((attempt) => attempt.level)
-
-  const highestLevel = passedLevels.reduce((bestLevel, level) => Math.max(bestLevel, level), -1)
+  let highestLevel = -1
+  for (const attempt of input.attempts) {
+    if (attempt.level <= input.maxEligibleLevel && entryMeetsMinimum(attempt)) {
+      highestLevel = Math.max(highestLevel, attempt.level)
+    }
+  }
   if (highestLevel < 0) {
     return {
       kind: "fallback",

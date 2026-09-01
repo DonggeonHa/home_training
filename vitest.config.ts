@@ -7,17 +7,14 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     coverage: {
-      include: [
-        "src/domain/catalog/catalog.ts",
-        "src/domain/catalog/catalog-validation.ts",
-        "src/domain/catalog/catalog-types.ts",
-        "src/domain/catalog/index.ts",
+      exclude: [
+        "src/**/*.test.{ts,tsx}",
+        "src/**/*.spec.ts",
+        "src/main.tsx",
+        "src/test/**",
+        "src/vite-env.d.ts",
       ],
-      branches: 100,
-      functions: 100,
-      lines: 100,
-      perFile: true,
-      statements: 100,
+      include: ["src/**/*.{ts,tsx}"],
     },
   },
 })

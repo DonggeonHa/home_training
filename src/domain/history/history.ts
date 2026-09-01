@@ -126,13 +126,18 @@ export function getRawUnitChartSeries(input: CategoryHistoryInput): readonly Raw
 }
 
 function getDatedEntries(input: CategoryHistoryInput): readonly DatedEntry[] {
-  return input.sessions
-    .flatMap((session) =>
-      session.entries
-        .filter((entry) => entry.categoryId === input.categoryId)
-        .map((entry) => ({ session, entry })),
-    )
-    .sort((left, right) => left.session.completedAt.localeCompare(right.session.completedAt))
+  const datedEntries: DatedEntry[] = []
+  for (const session of input.sessions) {
+    for (const entry of session.entries) {
+      if (entry.categoryId === input.categoryId) {
+        datedEntries.push({ session, entry })
+      }
+    }
+  }
+
+  return datedEntries.sort((left, right) =>
+    left.session.completedAt.localeCompare(right.session.completedAt),
+  )
 }
 
 function getSingleValues(
@@ -170,12 +175,18 @@ function getPerSideValues(entry: SessionEntry): readonly PerSidePr[] {
 function bestSingleValue(
   values: readonly { readonly unit: SingleUnit; readonly value: number }[],
 ): SinglePr | undefined {
-  const repsMax = maxNumber(
-    values.filter((value) => value.unit === "reps").map((value) => value.value),
-  )
-  const secondsMax = maxNumber(
-    values.filter((value) => value.unit === "seconds").map((value) => value.value),
-  )
+  const maxima: { reps: number | undefined; seconds: number | undefined } = {
+    reps: undefined,
+    seconds: undefined,
+  }
+  for (const value of values) {
+    const currentMaximum = maxima[value.unit]
+    maxima[value.unit] =
+      currentMaximum === undefined ? value.value : Math.max(currentMaximum, value.value)
+  }
+
+  const repsMax = maxima.reps
+  const secondsMax = maxima.seconds
   if (repsMax !== undefined) {
     return { unit: "reps", value: repsMax }
   }
@@ -198,13 +209,18 @@ function getSingleChartPoints(
   datedEntry: DatedEntry,
   unit: SingleUnit,
 ): readonly SingleChartPoint[] {
-  return getSingleValues(datedEntry.entry)
-    .filter((value) => value.unit === unit)
-    .map((value, setIndex) => ({
-      completedAt: datedEntry.session.completedAt,
-      setIndex,
-      value: value.value,
-    }))
+  const points: SingleChartPoint[] = []
+  for (const value of getSingleValues(datedEntry.entry)) {
+    if (value.unit === unit) {
+      points.push({
+        completedAt: datedEntry.session.completedAt,
+        setIndex: points.length,
+        value: value.value,
+      })
+    }
+  }
+
+  return points
 }
 
 function getLoadChartPoints(datedEntry: DatedEntry): readonly SingleChartPoint[] {
