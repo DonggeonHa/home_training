@@ -1,23 +1,40 @@
 import { Barbell, Moon, Sun } from "@phosphor-icons/react"
 import { useState } from "react"
 import { AppRoutes, PrimaryNavigation } from "./app/routes"
-import { AppStoreProvider } from "./app/store/provider"
-import { isThemePreference, useThemePreference } from "./app/theme"
+import { AppStoreProvider, useAppStore } from "./app/store/provider"
+import { isThemePreference, resolveMotionClass, resolveReducedMotionPreference } from "./app/theme"
 import { Button, Dialog } from "./shared/ui"
 import type { StoragePort } from "./storage/ports"
+import { BrowserDownloadPort, type DownloadPort } from "./storage/ports"
 import "./styles/layout.css"
 import "./styles/ui.css"
 
 type AppProps = {
+  readonly downloads?: DownloadPort | undefined
   readonly storage?: StoragePort | undefined
 }
 
-export function App({ storage }: AppProps) {
-  const [safetyDialogOpen, setSafetyDialogOpen] = useState(false)
-  const { motionClass, preference, resolvedTheme, setPreference } = useThemePreference()
-
+export function App({ downloads, storage }: AppProps) {
   return (
     <AppStoreProvider storage={storage}>
+      <AppShell downloads={downloads ?? new BrowserDownloadPort()} />
+    </AppStoreProvider>
+  )
+}
+
+function AppShell({ downloads }: { readonly downloads: DownloadPort }) {
+  const [safetyDialogOpen, setSafetyDialogOpen] = useState(false)
+  const [workoutStatus, setWorkoutStatus] = useState("")
+  const { actions, state } = useAppStore()
+  const motionClass = resolveMotionClass(
+    resolveReducedMotionPreference(
+      state.display.reducedMotionPreference,
+      state.display.prefersReducedMotion,
+    ),
+  )
+
+  return (
+    <>
       {/* biome-ignore lint/a11y/useValidAnchor: skip links are anchors, and the handler repairs browser focus transfer to main. */}
       <a
         className="skip-link"
@@ -29,7 +46,11 @@ export function App({ storage }: AppProps) {
       >
         본문으로 건너뛰기
       </a>
-      <div className={`app-shell ${motionClass}`} data-theme={resolvedTheme}>
+      <div
+        className={`app-shell ${motionClass}`}
+        data-testid="app-shell"
+        data-theme={state.display.resolvedTheme}
+      >
         <header className="app-header">
           <div className="app-brand">
             <div className="brand-mark" aria-hidden="true">
@@ -52,10 +73,10 @@ export function App({ storage }: AppProps) {
                 onChange={(event) => {
                   const nextPreference = event.currentTarget.value
                   if (isThemePreference(nextPreference)) {
-                    setPreference(nextPreference)
+                    actions.setThemePreference(nextPreference)
                   }
                 }}
-                value={preference}
+                value={state.display.themePreference}
               >
                 <option value="system">시스템</option>
                 <option value="light">라이트</option>
@@ -67,8 +88,11 @@ export function App({ storage }: AppProps) {
         </header>
         <PrimaryNavigation />
         <main id="main-content" className="app-main" tabIndex={-1}>
-          <AppRoutes />
+          <AppRoutes downloads={downloads} onWorkoutCompleted={setWorkoutStatus} />
         </main>
+        <p className="sr-only" role="status">
+          {workoutStatus}
+        </p>
         <Dialog
           onOpenChange={setSafetyDialogOpen}
           open={safetyDialogOpen}
@@ -82,6 +106,6 @@ export function App({ storage }: AppProps) {
           </ul>
         </Dialog>
       </div>
-    </AppStoreProvider>
+    </>
   )
 }

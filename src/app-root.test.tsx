@@ -114,17 +114,17 @@ describe("App root", () => {
     ).not.toBeInTheDocument()
   })
 
-  it("renders selected routes and unknown hashes after onboarding is complete", () => {
+  it("renders selected routes and unknown hashes after onboarding is complete", async () => {
     renderAppAtHash("/record", createCompletedOnboardingStorage())
 
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" })
     expect(within(nav).getByRole("link", { name: "기록" })).toHaveAttribute("aria-current", "page")
-    expect(screen.getByRole("heading", { level: 1, name: "기록" })).toBeVisible()
+    expect(await screen.findByRole("heading", { level: 1, name: "기록과 성장" })).toBeVisible()
 
     cleanup()
     renderAppAtHash("/unsupported", createCompletedOnboardingStorage())
     expect(
-      screen.getByRole("heading", { level: 1, name: "페이지를 찾을 수 없습니다" }),
+      await screen.findByRole("heading", { level: 1, name: "페이지를 찾을 수 없습니다" }),
     ).toBeVisible()
     expect(screen.getByRole("link", { name: "홈으로 돌아가기" })).toHaveAttribute("href", "#/")
   })

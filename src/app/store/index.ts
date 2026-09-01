@@ -1,4 +1,4 @@
-export { AppStoreProvider, useAppStore } from "./provider"
+export { AppStoreProvider, type ReplaceStoredStateResult, useAppStore } from "./provider"
 export { createAppStoreState, reduceAppStore, toStoredState } from "./reducer"
 export {
   currentCategoryKey,

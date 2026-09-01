@@ -107,13 +107,15 @@ describe("safety onboarding", () => {
     expect(screen.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
   })
 
-  it("passes through to the route content only after safety and assessment are complete", () => {
+  it("passes through to the route content only after safety and assessment are complete", async () => {
     const storage = new MemoryStoragePort()
     storage.values.set(APP_STORAGE_KEY, JSON.stringify(createCompletedOnboardingState()))
 
     renderApp(storage)
 
-    expect(screen.getByRole("heading", { level: 1, name: "홈트레이닝 LEVEL UP" })).toBeVisible()
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "오늘의 진행 대시보드" }),
+    ).toBeVisible()
     expect(
       screen.queryByRole("heading", { level: 1, name: "운동 전 안전 확인" }),
     ).not.toBeInTheDocument()

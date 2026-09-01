@@ -6,11 +6,15 @@
 }
 
 .settings-page {
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-width: 0;
   gap: var(--space-8);
 }
 
 .settings-intro,
 .settings-panel {
+  min-width: 0;
   padding: var(--space-5);
   border: 1px solid var(--border-subtle);
   border-radius: var(--space-2);
@@ -64,4 +68,14 @@
 
 .settings-notice.restored {
   color: var(--status-success);
+}
+
+.settings-panel input,
+.settings-panel select {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.settings-panel input[type="file"] {
+  inline-size: 100%;
 }

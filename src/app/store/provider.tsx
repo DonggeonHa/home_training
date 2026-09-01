@@ -11,6 +11,7 @@ import {
 } from "react"
 import { saveStoredState } from "../../storage/persistence"
 import { BrowserLocalStoragePort, type StoragePort } from "../../storage/ports"
+import { storeReducedMotionPreference, storeThemePreference } from "../theme"
 import { createAppStoreState, reduceAppStore, toStoredState } from "./reducer"
 import { currentCategoryKey } from "./selectors"
 import type {
@@ -28,7 +29,21 @@ type AppActions = {
   readonly submitAssessmentSet: (input: AssessmentSetInput) => void
   readonly changeActiveSession: (activeSession: AppStoreState["stored"]["activeSession"]) => void
   readonly applyWorkoutCompletion: (patch: WorkoutCompletionPatch) => void
+  readonly replaceStoredState: (state: AppStoreState["stored"]) => ReplaceStoredStateResult
+  readonly setReducedMotionPreference: (
+    preference: AppStoreState["display"]["reducedMotionPreference"],
+  ) => void
+  readonly setThemePreference: (preference: AppStoreState["display"]["themePreference"]) => void
 }
+
+export type ReplaceStoredStateResult =
+  | {
+      readonly kind: "saved"
+    }
+  | {
+      readonly kind: "failed"
+      readonly reason: "storageSaveFailed"
+    }
 
 type AppStoreContextValue = {
   readonly state: AppStoreState
@@ -72,7 +87,46 @@ export function AppStoreProvider({ children, storage }: AppStoreProviderProps) {
     dispatch({ type: "saveFailed", reason: result.reason })
   }, [state])
 
-  const actions = useAppActionCreators(state, dispatch)
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+    storeThemePreference(window.localStorage, state.display.themePreference)
+  }, [state.display.themePreference])
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+    storeReducedMotionPreference(window.localStorage, state.display.reducedMotionPreference)
+  }, [state.display.reducedMotionPreference])
+
+  useEffect(() => {
+    const colorMatcher = createMediaMatcher("(prefers-color-scheme: dark)")
+    const motionMatcher = createMediaMatcher("(prefers-reduced-motion: reduce)")
+    const updatePreferences = () =>
+      dispatch({
+        type: "systemDisplayPreferencesChanged",
+        prefersDark: colorMatcher?.matches ?? false,
+        prefersReducedMotion: motionMatcher?.matches ?? false,
+      })
+
+    colorMatcher?.addEventListener("change", updatePreferences)
+    motionMatcher?.addEventListener("change", updatePreferences)
+
+    return () => {
+      colorMatcher?.removeEventListener("change", updatePreferences)
+      motionMatcher?.removeEventListener("change", updatePreferences)
+    }
+  }, [])
+
+  const actions = useAppActionCreators({
+    dispatch,
+    failedSnapshotRef,
+    lastSavedSnapshotRef,
+    state,
+    storageRef,
+  })
   const value = useMemo(() => ({ state, actions }), [actions, state])
 
   return <AppStoreContext.Provider value={value}>{children}</AppStoreContext.Provider>
@@ -86,10 +140,16 @@ export function useAppStore(): AppStoreContextValue {
   return value
 }
 
-function useAppActionCreators(
-  state: AppStoreState,
-  dispatch: React.Dispatch<AppStoreAction>,
-): AppActions {
+type AppActionCreatorInput = {
+  readonly dispatch: React.Dispatch<AppStoreAction>
+  readonly failedSnapshotRef: React.MutableRefObject<string | null>
+  readonly lastSavedSnapshotRef: React.MutableRefObject<string>
+  readonly state: AppStoreState
+  readonly storageRef: React.MutableRefObject<StoragePort>
+}
+
+function useAppActionCreators(input: AppActionCreatorInput): AppActions {
+  const { dispatch, failedSnapshotRef, lastSavedSnapshotRef, state, storageRef } = input
   const submitSafetyAnswers = useCallback(
     (answers: SafetyAnswers) => {
       dispatch({
@@ -127,12 +187,41 @@ function useAppActionCreators(
     (patch: WorkoutCompletionPatch) => dispatch({ type: "workoutCompletionApplied", patch }),
     [dispatch],
   )
+  const replaceStoredState = useCallback(
+    (nextState: AppStoreState["stored"]) => {
+      const result = saveStoredState({ storage: storageRef.current, state: nextState })
+      if (result.kind === "failed") {
+        dispatch({ type: "saveFailed", reason: result.reason })
+        return { kind: "failed", reason: "storageSaveFailed" } satisfies ReplaceStoredStateResult
+      }
+
+      const nextSnapshot = JSON.stringify(nextState)
+      lastSavedSnapshotRef.current = nextSnapshot
+      failedSnapshotRef.current = null
+      dispatch({ type: "stateReplaced", state: nextState })
+      return { kind: "saved" } satisfies ReplaceStoredStateResult
+    },
+    [dispatch, failedSnapshotRef, lastSavedSnapshotRef, storageRef],
+  )
+  const setReducedMotionPreference = useCallback(
+    (reducedMotionPreference: AppStoreState["display"]["reducedMotionPreference"]) =>
+      dispatch({ type: "displayPreferencesChanged", reducedMotionPreference }),
+    [dispatch],
+  )
+  const setThemePreference = useCallback(
+    (themePreference: AppStoreState["display"]["themePreference"]) =>
+      dispatch({ type: "displayPreferencesChanged", themePreference }),
+    [dispatch],
+  )
 
   return useMemo(
     () => ({
       applyWorkoutCompletion,
       changeActiveSession,
+      replaceStoredState,
       resetSafetyReview,
+      setReducedMotionPreference,
+      setThemePreference,
       startAssessment,
       submitAssessmentSet,
       submitSafetyAnswers,
@@ -140,12 +229,23 @@ function useAppActionCreators(
     [
       applyWorkoutCompletion,
       changeActiveSession,
+      replaceStoredState,
       resetSafetyReview,
+      setReducedMotionPreference,
+      setThemePreference,
       startAssessment,
       submitAssessmentSet,
       submitSafetyAnswers,
     ],
   )
+}
+
+function createMediaMatcher(query: string): MediaQueryList | null {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return null
+  }
+
+  return window.matchMedia(query)
 }
 
 class AppStoreProviderError extends Error {

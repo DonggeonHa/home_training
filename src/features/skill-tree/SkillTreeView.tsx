@@ -1,19 +1,27 @@
+import type { CategoryId } from "../../domain/contracts"
 import type { StoredState } from "../../storage"
 import { buildSkillTrees } from "./model"
 import "./skill-tree.css"
 
 type SkillTreeViewProps = {
+  readonly selectedCategoryId?: CategoryId | undefined
   readonly state: StoredState
 }
 
-export function SkillTreeView({ state }: SkillTreeViewProps) {
-  const trees = buildSkillTrees(state)
+export function SkillTreeView({ selectedCategoryId, state }: SkillTreeViewProps) {
+  const trees = buildSkillTrees(state).filter(
+    (tree) => selectedCategoryId === undefined || tree.category.id === selectedCategoryId,
+  )
+  const pageTitle =
+    trees.length === 1 && selectedCategoryId !== undefined
+      ? `${trees[0]?.category.title ?? "선택"} 스킬트리`
+      : "전체 스킬트리"
 
   return (
     <section className="skill-tree-page" aria-labelledby="skill-tree-title">
       <div className="skill-tree-intro">
         <p className="panel-label">Six movement patterns</p>
-        <h1 id="skill-tree-title">전체 스킬트리</h1>
+        <h1 id="skill-tree-title">{pageTitle}</h1>
         <p>모든 레벨은 목표, 장비, 회귀 동작, 워밍업, 중단 신호와 함께 표시됩니다.</p>
       </div>
       {trees.map((tree) => (

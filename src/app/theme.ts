@@ -1,15 +1,20 @@
-import { useEffect, useMemo, useState } from "react"
-
 export const THEME_STORAGE_KEY = "home-training-theme"
+export const REDUCED_MOTION_STORAGE_KEY = "home-training-reduced-motion"
 
 export const themePreferences = ["system", "light", "dark"] as const
+export const reducedMotionPreferences = ["system", "reduce"] as const
 
 export type ThemePreference = (typeof themePreferences)[number]
+export type ReducedMotionPreference = (typeof reducedMotionPreferences)[number]
 export type ResolvedTheme = Exclude<ThemePreference, "system">
 export type MotionClass = "motion-ok" | "motion-reduce"
 
 export function isThemePreference(value: string): value is ThemePreference {
   return themePreferences.some((preference) => preference === value)
+}
+
+export function isReducedMotionPreference(value: string): value is ReducedMotionPreference {
+  return reducedMotionPreferences.some((preference) => preference === value)
 }
 
 export function resolveThemePreference(
@@ -36,71 +41,28 @@ export function storeThemePreference(
   storage.setItem(THEME_STORAGE_KEY, preference)
 }
 
+export function loadReducedMotionPreference(
+  storage: Pick<Storage, "getItem">,
+): ReducedMotionPreference {
+  const stored = storage.getItem(REDUCED_MOTION_STORAGE_KEY)
+
+  return stored !== null && isReducedMotionPreference(stored) ? stored : "system"
+}
+
+export function storeReducedMotionPreference(
+  storage: Pick<Storage, "setItem">,
+  preference: ReducedMotionPreference,
+): void {
+  storage.setItem(REDUCED_MOTION_STORAGE_KEY, preference)
+}
+
 export function resolveMotionClass(prefersReducedMotion: boolean): MotionClass {
   return prefersReducedMotion ? "motion-reduce" : "motion-ok"
 }
 
-function createMediaMatcher(query: string): MediaQueryList | null {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    return null
-  }
-
-  return window.matchMedia(query)
-}
-
-export function useThemePreference(): {
-  readonly motionClass: MotionClass
-  readonly preference: ThemePreference
-  readonly resolvedTheme: ResolvedTheme
-  readonly setPreference: (preference: ThemePreference) => void
-} {
-  const [preference, setPreferenceState] = useState<ThemePreference>(() => {
-    if (typeof window === "undefined") {
-      return "system"
-    }
-
-    return loadThemePreference(window.localStorage)
-  })
-  const [prefersDark, setPrefersDark] = useState(() => {
-    const matcher = createMediaMatcher("(prefers-color-scheme: dark)")
-    return matcher?.matches ?? false
-  })
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-    const matcher = createMediaMatcher("(prefers-reduced-motion: reduce)")
-    return matcher?.matches ?? false
-  })
-
-  useEffect(() => {
-    const colorMatcher = createMediaMatcher("(prefers-color-scheme: dark)")
-    const motionMatcher = createMediaMatcher("(prefers-reduced-motion: reduce)")
-
-    const handleColorChange = (event: MediaQueryListEvent) => setPrefersDark(event.matches)
-    const handleMotionChange = (event: MediaQueryListEvent) =>
-      setPrefersReducedMotion(event.matches)
-
-    colorMatcher?.addEventListener("change", handleColorChange)
-    motionMatcher?.addEventListener("change", handleMotionChange)
-
-    return () => {
-      colorMatcher?.removeEventListener("change", handleColorChange)
-      motionMatcher?.removeEventListener("change", handleMotionChange)
-    }
-  }, [])
-
-  const setPreference = (nextPreference: ThemePreference) => {
-    storeThemePreference(window.localStorage, nextPreference)
-    setPreferenceState(nextPreference)
-  }
-
-  const resolvedTheme = resolveThemePreference(preference, prefersDark)
-
-  return useMemo(
-    () => ({
-      motionClass: resolveMotionClass(prefersReducedMotion),
-      preference,
-      resolvedTheme,
-      setPreference,
-    }),
-    [preference, prefersReducedMotion, resolvedTheme],
-  )
+export function resolveReducedMotionPreference(
+  preference: ReducedMotionPreference,
+  prefersReducedMotion: boolean,
+): boolean {
+  return preference === "reduce" || prefersReducedMotion
 }

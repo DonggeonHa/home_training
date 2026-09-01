@@ -10,6 +10,7 @@ import type {
   StorageSaveFailureReason,
   StoredState,
 } from "../../storage/schemas"
+import type { ReducedMotionPreference, ResolvedTheme, ThemePreference } from "../theme"
 
 export type SafetyAnswers = {
   readonly chestPain: boolean
@@ -43,6 +44,13 @@ export type AppSaveNotice = {
 }
 
 export type AppStoreState = {
+  readonly display: {
+    readonly prefersDark: boolean
+    readonly prefersReducedMotion: boolean
+    readonly reducedMotionPreference: ReducedMotionPreference
+    readonly resolvedTheme: ResolvedTheme
+    readonly themePreference: ThemePreference
+  }
   readonly stored: StoredState
   readonly loadNotice?: StorageLoadNotice | undefined
   readonly saveNotice?: AppSaveNotice | undefined
@@ -113,5 +121,19 @@ export type AppStoreAction =
   | {
       readonly type: "workoutCompletionApplied"
       readonly patch: WorkoutCompletionPatch
+    }
+  | {
+      readonly type: "displayPreferencesChanged"
+      readonly reducedMotionPreference?: ReducedMotionPreference | undefined
+      readonly themePreference?: ThemePreference | undefined
+    }
+  | {
+      readonly type: "systemDisplayPreferencesChanged"
+      readonly prefersDark: boolean
+      readonly prefersReducedMotion: boolean
+    }
+  | {
+      readonly type: "stateReplaced"
+      readonly state: StoredState
     }
   | { readonly type: "saveSucceeded" }
