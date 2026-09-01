@@ -2,7 +2,7 @@ import type { SetQuality } from "../../domain/contracts"
 import { startRestTimer } from "../../domain/rest-timer"
 import { acceptsRir, currentCategoryPlan, EMERGENCY_STOP_GUIDANCE } from "./engine"
 import { replaceCurrentPlan, updateSession } from "./session-state-helpers"
-import { parseSetRecord } from "./set-record-parser"
+import { parseSetRecord, readSetRecordInputError } from "./set-record-parser"
 import { maybeSwitchFailedFirstTestSetToCurrentLevel } from "./test-fallback"
 import type { WorkoutState } from "./types"
 
@@ -105,7 +105,14 @@ export function saveSet(state: WorkoutState): WorkoutState {
     acceptsRir: acceptsRir(plan.entry.metricRule),
   })
   if (parsed === null) {
-    return { ...state, error: "0 이상의 숫자로 세트 기록을 입력하세요." }
+    return {
+      ...state,
+      error:
+        readSetRecordInputError({
+          draft: state.setDraft,
+          acceptsRir: acceptsRir(plan.entry.metricRule),
+        }) ?? "0 이상의 숫자로 세트 기록을 입력하세요.",
+    }
   }
   const withPlan = replaceCurrentPlan(
     { ...state, setDraft: null },

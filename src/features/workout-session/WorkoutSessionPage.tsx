@@ -12,7 +12,12 @@ import {
   toActiveSessionPatch,
 } from "./engine"
 import { RestTimerPanel } from "./RestTimerPanel"
-import { createWorkoutState, reduceWorkout, type WorkoutAction } from "./reducer"
+import {
+  createWorkoutState,
+  readCategoryAdvanceReadiness,
+  reduceWorkout,
+  type WorkoutAction,
+} from "./reducer"
 import {
   AbandonDialog,
   GuidanceList,
@@ -106,6 +111,7 @@ export function WorkoutSessionPage(props: WorkoutSessionPageProps) {
   const categoryWarmupComplete =
     session.categoryWarmupCompleteByCategory[categoryWarmupKey(plan.categoryId)]
   const progressValue = plan.entry.sets.length
+  const categoryAdvance = readCategoryAdvanceReadiness(session)
   const restRemaining =
     session.restEndsAt === null
       ? null
@@ -197,8 +203,12 @@ export function WorkoutSessionPage(props: WorkoutSessionPageProps) {
       />
 
       <footer className="workout-sticky">
-        <Button onClick={() => dispatchWorkout({ type: "categoryAdvanced" })} variant="secondary">
-          다음 카테고리
+        <Button
+          disabled={!categoryAdvance.canAdvance}
+          onClick={() => dispatchWorkout({ type: "categoryAdvanced" })}
+          variant="secondary"
+        >
+          {categoryAdvance.label}
         </Button>
         <Button onClick={() => dispatchWorkout({ type: "abandonRequested" })} variant="ghost">
           세션 포기

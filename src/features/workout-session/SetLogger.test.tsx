@@ -95,6 +95,51 @@ describe("SetLogger", () => {
     expect(onDispatch).toHaveBeenLastCalledWith({ type: "setSaved" })
   })
 
+  it("uses integer steps for reps and RIR while allowing decimal load entry", () => {
+    render(
+      <SetForm
+        metricRule={repsRule}
+        onDispatch={vi.fn()}
+        state={stateWithDraft({
+          kind: "single",
+          valueText: "",
+          rirText: "2",
+          loadText: "",
+          quality: goodQuality(),
+        })}
+      />,
+    )
+
+    expect(screen.getByRole("spinbutton", { name: "반복 수" })).toHaveAttribute("step", "1")
+    expect(screen.getByRole("spinbutton", { name: "반복 수" })).toHaveAttribute("min", "0")
+    expect(screen.getByRole("spinbutton", { name: "RIR" })).toHaveAttribute("step", "1")
+    expect(screen.getByRole("spinbutton", { name: "RIR" })).toHaveAttribute("max", "5")
+    expect(screen.getByRole("spinbutton", { name: "중량 kg" })).toHaveAttribute("step", "0.5")
+    expect(screen.getByRole("spinbutton", { name: "중량 kg" })).toHaveAttribute(
+      "inputmode",
+      "decimal",
+    )
+  })
+
+  it("uses integer steps for duration seconds", () => {
+    render(
+      <SetForm
+        metricRule={durationRule}
+        onDispatch={vi.fn()}
+        state={stateWithDraft({
+          kind: "single",
+          valueText: "",
+          rirText: "2",
+          loadText: "",
+          quality: goodQuality(),
+        })}
+      />,
+    )
+
+    expect(screen.getByRole("spinbutton", { name: "초" })).toHaveAttribute("step", "1")
+    expect(screen.getByRole("spinbutton", { name: "초" })).toHaveAttribute("inputmode", "numeric")
+  })
+
   it("dispatches both sides from a per-side form", async () => {
     const onDispatch = vi.fn()
     const user = userEvent.setup()

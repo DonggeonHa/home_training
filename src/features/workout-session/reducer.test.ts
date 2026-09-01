@@ -22,11 +22,14 @@ describe("workout session reducer", () => {
 
   it("requires every pull bar checklist confirmation before set entry", () => {
     const stored = createCompletedOnboardingState()
-    const started = reduceWorkout(createWorkoutState({ stored, nowMs: now.getTime(), sessionId }), {
+    const started = completeCurrentCategory(
+      reduceWorkout(createWorkoutState({ stored, nowMs: now.getTime(), sessionId }), {
+        type: "commonWarmupCompleted",
+      }),
+    )
+    const atPush = completeCurrentCategory(started)
+    const atPull = reduceWorkout(atPush, {
       type: "commonWarmupCompleted",
-    })
-    const atPull = reduceWorkout(reduceWorkout(started, { type: "categoryAdvanced" }), {
-      type: "categoryAdvanced",
     })
 
     const blocked = reduceWorkout(atPull, { type: "setDraftOpened" })
@@ -36,6 +39,32 @@ describe("workout session reducer", () => {
 
     expect(blocked.error).toMatch(/철봉/)
     expect(allowed.setDraft?.kind).toBe("single")
+  })
+
+  it("rejects direct category advance until warmup and required work are complete", () => {
+    const started = reduceWorkout(
+      createWorkoutState({
+        stored: createCompletedOnboardingState(),
+        nowMs: now.getTime(),
+        sessionId,
+      }),
+      { type: "commonWarmupCompleted" },
+    )
+    const withWarmup = reduceWorkout(started, { type: "categoryWarmupCompleted" })
+    const withOneSet = saveSingleSet(withWarmup, "15")
+
+    const blockedWithoutCategoryWarmup = reduceWorkout(started, { type: "categoryAdvanced" })
+    const blockedWithoutSets = reduceWorkout(withWarmup, { type: "categoryAdvanced" })
+    const blockedWithIncompleteSets = reduceWorkout(withOneSet, { type: "categoryAdvanced" })
+    const advanced = reduceWorkout(saveSingleSet(withOneSet, "15"), { type: "categoryAdvanced" })
+
+    expect(blockedWithoutCategoryWarmup.session?.currentCategoryIndex).toBe(0)
+    expect(blockedWithoutCategoryWarmup.error).toMatch(/준비/)
+    expect(blockedWithoutSets.session?.currentCategoryIndex).toBe(0)
+    expect(blockedWithoutSets.error).toMatch(/2세트/)
+    expect(blockedWithIncompleteSets.session?.currentCategoryIndex).toBe(0)
+    expect(blockedWithIncompleteSets.error).toMatch(/1세트/)
+    expect(advanced.session?.currentCategoryIndex).toBe(1)
   })
 
   it("marks the current category warmup complete", () => {
@@ -63,12 +92,13 @@ describe("workout session reducer", () => {
           type: "commonWarmupCompleted",
         },
       ),
-      { type: "setDraftOpened" },
+      { type: "categoryWarmupCompleted" },
     )
+    const draftOpen = reduceWorkout(state, { type: "setDraftOpened" })
 
     const stopped = reduceWorkout(
       reduceWorkout(
-        reduceWorkout(state, { field: "valueText", type: "draftTextChanged", value: "15" }),
+        reduceWorkout(draftOpen, { field: "valueText", type: "draftTextChanged", value: "15" }),
         { field: "pain", type: "qualityChanged", value: true },
       ),
       { type: "setSaved" },
@@ -171,4 +201,21 @@ function saveFirstSet() {
     value: "15",
   })
   return reduceWorkout(withValue, { type: "setSaved" })
+}
+
+function saveSingleSet(state: ReturnType<typeof createWorkoutState>, value: string) {
+  const opened = reduceWorkout(state, { type: "setDraftOpened" })
+  const withValue = reduceWorkout(opened, {
+    field: "valueText",
+    type: "draftTextChanged",
+    value,
+  })
+  return reduceWorkout(withValue, { type: "setSaved" })
+}
+
+function completeCurrentCategory(state: ReturnType<typeof createWorkoutState>) {
+  const warmed = reduceWorkout(state, { type: "categoryWarmupCompleted" })
+  const firstSet = saveSingleSet(warmed, "15")
+  const secondSet = saveSingleSet(firstSet, "15")
+  return reduceWorkout(secondSet, { type: "categoryAdvanced" })
 }

@@ -58,15 +58,34 @@ describe("workout state snapshot persistence", () => {
     }
     const firstSet = reduceWorkout(
       reduceWorkout(
-        reduceWorkout(createWorkoutState({ stored: testStored, nowMs, sessionId }), {
-          type: "commonWarmupCompleted",
-        }),
+        reduceWorkout(
+          reduceWorkout(createWorkoutState({ stored: testStored, nowMs, sessionId }), {
+            type: "commonWarmupCompleted",
+          }),
+          { type: "categoryWarmupCompleted" },
+        ),
         { type: "setDraftOpened" },
       ),
       { field: "valueText", type: "draftTextChanged", value: "0" },
     )
     const fallback = reduceWorkout(firstSet, { type: "setSaved" })
-    const advanced = reduceWorkout(fallback, { type: "categoryAdvanced" })
+    const secondFallbackSet = reduceWorkout(
+      reduceWorkout(reduceWorkout(fallback, { type: "setDraftOpened" }), {
+        field: "valueText",
+        type: "draftTextChanged",
+        value: "15",
+      }),
+      { type: "setSaved" },
+    )
+    const thirdFallbackSet = reduceWorkout(
+      reduceWorkout(reduceWorkout(secondFallbackSet, { type: "setDraftOpened" }), {
+        field: "valueText",
+        type: "draftTextChanged",
+        value: "15",
+      }),
+      { type: "setSaved" },
+    )
+    const advanced = reduceWorkout(thirdFallbackSet, { type: "categoryAdvanced" })
     const parsed = StoredStateSchema.parse(
       structuredClone({
         ...testStored,

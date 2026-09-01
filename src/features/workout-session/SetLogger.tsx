@@ -11,7 +11,7 @@ export function SetList(props: {
   return (
     <ol className="workout-set-list">
       {props.sets.map((set, index) => (
-        <li key={`${set.kind}-${index}`}>
+        <li key={setRecordKey(set)}>
           {`${index + 1}세트 · ${set.kind === "single" ? set.value : `${set.left}/${set.right}`} ${unitLabel(props.metricRule)}`}
         </li>
       ))}
@@ -35,6 +35,7 @@ export function SetForm(props: {
         <>
           <NumberInput
             label="왼쪽"
+            step="1"
             value={draft.leftText}
             onChange={(value) =>
               props.onDispatch({ field: "leftText", type: "draftTextChanged", value })
@@ -42,6 +43,7 @@ export function SetForm(props: {
           />
           <NumberInput
             label="오른쪽"
+            step="1"
             value={draft.rightText}
             onChange={(value) =>
               props.onDispatch({ field: "rightText", type: "draftTextChanged", value })
@@ -51,6 +53,7 @@ export function SetForm(props: {
       ) : (
         <NumberInput
           label={props.metricRule.kind === "duration" ? "초" : "반복 수"}
+          step="1"
           value={draft.valueText}
           onChange={(value) =>
             props.onDispatch({ field: "valueText", type: "draftTextChanged", value })
@@ -60,6 +63,8 @@ export function SetForm(props: {
       {props.metricRule.kind === "reps" || props.metricRule.kind === "tempoReps" ? (
         <NumberInput
           label="RIR"
+          max="5"
+          step="1"
           value={draft.rirText}
           onChange={(value) =>
             props.onDispatch({ field: "rirText", type: "draftTextChanged", value })
@@ -68,6 +73,8 @@ export function SetForm(props: {
       ) : null}
       <NumberInput
         label="중량 kg"
+        inputMode="decimal"
+        step="0.5"
         value={draft.loadText}
         onChange={(value) =>
           props.onDispatch({ field: "loadText", type: "draftTextChanged", value })
@@ -92,8 +99,26 @@ export function SetForm(props: {
   )
 }
 
+function setRecordKey(set: SetRecord): string {
+  const rir = set.rir ?? "none"
+  const loadKg = set.loadKg ?? "none"
+  const quality = `${set.quality.pain}-${set.quality.form}-${set.quality.rom}`
+
+  switch (set.kind) {
+    case "single":
+      return `${set.kind}-${set.value}-${rir}-${loadKg}-${quality}`
+    case "perSide":
+      return `${set.kind}-${set.left}-${set.right}-${rir}-${loadKg}-${quality}`
+    default:
+      return assertNever(set)
+  }
+}
+
 function NumberInput(props: {
   readonly label: string
+  readonly inputMode?: "decimal" | "numeric" | undefined
+  readonly max?: string | undefined
+  readonly step: string
   readonly value: string
   readonly onChange: (value: string) => void
 }) {
@@ -101,9 +126,11 @@ function NumberInput(props: {
     <label className="workout-field">
       <span>{props.label}</span>
       <input
-        inputMode="numeric"
+        inputMode={props.inputMode ?? "numeric"}
+        max={props.max}
         min="0"
         onChange={(event) => props.onChange(event.currentTarget.value)}
+        step={props.step}
         type="number"
         value={props.value}
       />

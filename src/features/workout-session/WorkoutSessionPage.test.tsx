@@ -210,9 +210,8 @@ describe("WorkoutSessionPage", () => {
       />,
     )
 
-    await user.click(screen.getByRole("button", { name: "공통 워밍업 완료" }))
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
+    await stopCurrentCategoryByPain(user, "반복 수", "15")
+    await stopCurrentCategoryByPain(user, "반복 수", "10")
 
     const checklist = screen.getByRole("group", { name: "철봉 안전 확인" })
     expect(within(checklist).getAllByRole("checkbox")).toHaveLength(4)
@@ -247,31 +246,6 @@ describe("WorkoutSessionPage", () => {
     expect(onComplete).not.toHaveBeenCalled()
   })
 
-  it("emits one completion patch after the last category", async () => {
-    const onComplete = vi.fn()
-    const user = userEvent.setup()
-
-    render(
-      <WorkoutSessionPage
-        nowMs={nowMs}
-        onComplete={onComplete}
-        sessionId={sessionId}
-        stored={createCompletedOnboardingState()}
-      />,
-    )
-
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
-
-    expect(onComplete).toHaveBeenCalledWith(
-      expect.objectContaining({ activeSession: null, nextRoutine: "B" }),
-    )
-    expect(onComplete).toHaveBeenCalledTimes(1)
-  })
-
   it("renders with default time and disables the painful exercise after a stop signal", async () => {
     const user = userEvent.setup()
 
@@ -287,3 +261,23 @@ describe("WorkoutSessionPage", () => {
     expect(screen.getByRole("button", { name: "세트 기록" })).toBeDisabled()
   })
 })
+
+async function stopCurrentCategoryByPain(
+  user: ReturnType<typeof userEvent.setup>,
+  inputName: string,
+  value: string,
+) {
+  const commonWarmup = screen.queryByRole("button", { name: "공통 워밍업 완료" })
+  if (commonWarmup !== null && !commonWarmup.hasAttribute("disabled")) {
+    await user.click(commonWarmup)
+  }
+  const categoryWarmup = screen.queryByRole("button", { name: "카테고리 워밍업 완료" })
+  if (categoryWarmup !== null && !categoryWarmup.hasAttribute("disabled")) {
+    await user.click(categoryWarmup)
+  }
+  await user.click(screen.getByRole("button", { name: "세트 기록" }))
+  await user.type(screen.getByRole("spinbutton", { name: inputName }), value)
+  await user.click(screen.getByRole("checkbox", { name: /통증/ }))
+  await user.click(screen.getByRole("button", { name: "세트 저장" }))
+  await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
+}

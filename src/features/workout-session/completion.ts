@@ -24,7 +24,7 @@ export function finishWorkout(input: FinishWorkoutInput): WorkoutStoragePatch {
   const completedSession: CompletedSession = {
     id: input.session.id,
     routineId: input.session.routineId,
-    completedAt: input.session.startedAt,
+    completedAt: input.now.toISOString(),
     entries: input.session.categoryPlans.flatMap((plan) =>
       plan.testAttemptEntry === undefined ? [plan.entry] : [plan.testAttemptEntry, plan.entry],
     ),

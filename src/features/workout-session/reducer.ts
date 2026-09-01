@@ -38,6 +38,12 @@ export type WorkoutAction =
   | { readonly type: "abandonCancelled" }
   | { readonly type: "abandonConfirmed" }
 
+export type CategoryAdvanceReadiness = {
+  readonly canAdvance: boolean
+  readonly label: string
+  readonly message: string | null
+}
+
 export function createWorkoutState(input: CreateWorkoutStateInput): WorkoutState {
   return startWorkoutState(input)
 }
@@ -153,7 +159,18 @@ function advanceCategory(state: WorkoutState): WorkoutState {
   if (state.session === null || state.session.completed) {
     return state
   }
+  const readiness = readCategoryAdvanceReadiness(state.session)
+  if (!readiness.canAdvance) {
+    return { ...state, error: readiness.message }
+  }
   const nextIndex = state.session.currentCategoryIndex + 1
+  const completedSession = nextIndex >= state.session.categoryPlans.length
+  if (completedSession && !state.session.categoryPlans.every(isCategoryWorkComplete)) {
+    return {
+      ...state,
+      error: "모든 카테고리를 완료하거나 통증 중단으로 기록해야 세션을 끝낼 수 있습니다.",
+    }
+  }
   return {
     ...state,
     error: null,
@@ -162,4 +179,57 @@ function advanceCategory(state: WorkoutState): WorkoutState {
         ? { ...state.session, completed: true, restEndsAt: null }
         : { ...state.session, currentCategoryIndex: nextIndex, restEndsAt: null },
   }
+}
+
+export function readCategoryAdvanceReadiness(
+  session: NonNullable<WorkoutState["session"]>,
+): CategoryAdvanceReadiness {
+  const plan = session.categoryPlans[session.currentCategoryIndex]
+  if (plan === undefined) {
+    return {
+      canAdvance: false,
+      label: "다음 카테고리",
+      message: "현재 카테고리를 찾을 수 없습니다.",
+    }
+  }
+  if (!session.commonWarmupComplete) {
+    return {
+      canAdvance: false,
+      label: "공통 워밍업 필요",
+      message: "공통 워밍업을 먼저 완료하세요.",
+    }
+  }
+  if (
+    !session.categoryWarmupCompleteByCategory[
+      plan.categoryId as keyof typeof session.categoryWarmupCompleteByCategory
+    ]
+  ) {
+    return {
+      canAdvance: false,
+      label: "카테고리 준비 필요",
+      message: "카테고리 준비를 먼저 완료하세요.",
+    }
+  }
+  if (!plan.pullChecklistConfirmed) {
+    return {
+      canAdvance: false,
+      label: "철봉 확인 필요",
+      message: "철봉 설치와 흔들림 확인을 모두 완료해야 다음 카테고리로 이동할 수 있습니다.",
+    }
+  }
+  if (isCategoryWorkComplete(plan)) {
+    return { canAdvance: true, label: "다음 카테고리", message: null }
+  }
+  const remainingSets = Math.max(0, plan.prescribedSetCount - plan.entry.sets.length)
+  return {
+    canAdvance: false,
+    label: `다음 카테고리 (${remainingSets}세트 남음)`,
+    message: `${remainingSets}세트를 더 기록하거나 통증 중단 신호를 저장해야 다음 카테고리로 이동할 수 있습니다.`,
+  }
+}
+
+function isCategoryWorkComplete(
+  plan: NonNullable<WorkoutState["session"]>["categoryPlans"][number],
+): boolean {
+  return plan.stoppedByPain || plan.entry.sets.length >= plan.prescribedSetCount
 }

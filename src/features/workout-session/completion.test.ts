@@ -39,6 +39,21 @@ describe("workout session completion", () => {
     expect(repeated.completedSession).toBeUndefined()
   })
 
+  it("records completion time from provided finish clock while preserving started session date", () => {
+    const stored = createCompletedOnboardingState()
+    const session = startWorkoutSession({ stored, now: startedAt, sessionId })
+    const finishedAt = new Date("2026-09-03T00:05:00.000Z")
+
+    const patch = finishWorkout({
+      session: { ...session, completed: true },
+      stored,
+      now: finishedAt,
+    })
+
+    expect(session.startedAt).toBe("2026-09-02T00:00:00.000Z")
+    expect(patch.completedSession?.completedAt).toBe("2026-09-03T00:05:00.000Z")
+  })
+
   it("keeps adaptation sessions at current progress without qualification", () => {
     const stored = createCompletedOnboardingState()
     const session = startWorkoutSession({ stored, now: startedAt, sessionId })

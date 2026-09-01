@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react"
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { HashRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
@@ -17,7 +17,7 @@ function renderProductionApp(
   window.location.hash = path
 
   return render(
-    <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+    <HashRouter>
       <App downloads={downloads} storage={storage} />
     </HashRouter>,
   )
@@ -119,10 +119,11 @@ describe("production route integration", () => {
     await user.click(await screen.findByRole("button", { name: "공통 워밍업 완료" }))
     await waitFor(() => expect(readPersistedState(storage).activeSession).not.toBeNull())
 
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
-    await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
+    await stopCurrentCategoryByPain(user, "반복 수", "15")
+    await stopCurrentCategoryByPain(user, "반복 수", "10")
+    await confirmPullChecklist(user)
+    await stopCurrentCategoryByPain(user, "초", "30")
+    await stopCurrentCategoryByPain(user, "초", "45")
 
     await waitFor(() => expect(window.location.hash).toBe("#/"))
     expect(screen.getByRole("status")).toHaveTextContent("루틴 A 완료")
@@ -130,7 +131,14 @@ describe("production route integration", () => {
     expect(readPersistedState(storage)).toMatchObject({
       activeSession: null,
       nextRoutine: "B",
-      completedSessions: [expect.objectContaining({ routineId: "A" })],
+      completedSessions: [
+        expect.objectContaining({
+          entries: expect.arrayContaining([
+            expect.objectContaining({ sets: [expect.objectContaining({ kind: "single" })] }),
+          ]),
+          routineId: "A",
+        }),
+      ],
     })
   })
 
@@ -192,3 +200,30 @@ describe("production route integration", () => {
     expect(readPersistedState(storage).nextRoutine).toBe("A")
   })
 })
+
+async function stopCurrentCategoryByPain(
+  user: ReturnType<typeof userEvent.setup>,
+  inputName: string,
+  value: string,
+) {
+  const commonWarmup = screen.queryByRole("button", { name: "공통 워밍업 완료" })
+  if (commonWarmup !== null && !commonWarmup.hasAttribute("disabled")) {
+    await user.click(commonWarmup)
+  }
+  const categoryWarmup = screen.queryByRole("button", { name: "카테고리 워밍업 완료" })
+  if (categoryWarmup !== null && !categoryWarmup.hasAttribute("disabled")) {
+    await user.click(categoryWarmup)
+  }
+  await user.click(screen.getByRole("button", { name: "세트 기록" }))
+  await user.type(screen.getByRole("spinbutton", { name: inputName }), value)
+  await user.click(screen.getByRole("checkbox", { name: /통증/ }))
+  await user.click(screen.getByRole("button", { name: "세트 저장" }))
+  await user.click(screen.getByRole("button", { name: "다음 카테고리" }))
+}
+
+async function confirmPullChecklist(user: ReturnType<typeof userEvent.setup>) {
+  const checklist = screen.getByRole("group", { name: "철봉 안전 확인" })
+  for (const checkbox of within(checklist).getAllByRole("checkbox")) {
+    await user.click(checkbox)
+  }
+}
