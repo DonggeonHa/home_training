@@ -14,7 +14,7 @@ function fileWithContent(content: string, name = "backup.json") {
 describe("SettingsView restore flow", () => {
   it("previews restore counts and only reports success after async save confirmation with backup first", async () => {
     const downloads = new MemoryDownloadPort()
-    const onRestoreConfirmed = vi.fn<[StoredState], Promise<SettingsRestoreCommitResult>>()
+    const onRestoreConfirmed = vi.fn<(state: StoredState) => Promise<SettingsRestoreCommitResult>>()
     const restoredState = {
       ...createCompletedOnboardingState(),
       completedSessions: [],
@@ -56,7 +56,7 @@ describe("SettingsView restore flow", () => {
 
   it("shows a typed failure instead of success when the async restore save fails", async () => {
     const downloads = new MemoryDownloadPort()
-    const onRestoreConfirmed = vi.fn<[StoredState], Promise<SettingsRestoreCommitResult>>()
+    const onRestoreConfirmed = vi.fn<(state: StoredState) => Promise<SettingsRestoreCommitResult>>()
     onRestoreConfirmed.mockResolvedValue({ kind: "failed", reason: "storageSaveFailed" })
 
     render(
@@ -86,7 +86,7 @@ describe("SettingsView restore flow", () => {
   })
 
   it("keeps restore blocked when no preview exists or pre-restore backup fails", async () => {
-    const onRestoreConfirmed = vi.fn<[StoredState], SettingsRestoreCommitResult>()
+    const onRestoreConfirmed = vi.fn<(state: StoredState) => SettingsRestoreCommitResult>()
     const view = render(
       <SettingsView
         currentState={createCompletedOnboardingState()}
@@ -127,7 +127,7 @@ describe("SettingsView restore flow", () => {
   })
 
   it("reports unknown restore save exceptions without claiming success", async () => {
-    const onRestoreConfirmed = vi.fn<[StoredState], Promise<SettingsRestoreCommitResult>>()
+    const onRestoreConfirmed = vi.fn<(state: StoredState) => Promise<SettingsRestoreCommitResult>>()
     onRestoreConfirmed.mockRejectedValue(new DOMException("blocked", "SecurityError"))
 
     render(

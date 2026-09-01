@@ -14,7 +14,7 @@ function renderApp(storage: MemoryStoragePort) {
   window.location.hash = "/"
 
   return render(
-    <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+    <HashRouter>
       <App storage={storage} />
     </HashRouter>,
   )

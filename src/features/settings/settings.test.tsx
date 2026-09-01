@@ -87,7 +87,7 @@ describe("SettingsView", () => {
   })
 
   it("preserves current state and reports validation errors for malformed and oversized imports without restore calls", async () => {
-    const onRestoreConfirmed = vi.fn<[StoredState], SettingsRestoreCommitResult>()
+    const onRestoreConfirmed = vi.fn<(state: StoredState) => SettingsRestoreCommitResult>()
 
     render(
       <SettingsView
