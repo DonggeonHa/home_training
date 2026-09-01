@@ -53,6 +53,26 @@ const CompletedSessionSchema = z
   })
   .strict()
 
+const AssessmentProgressByCategorySchema = z
+  .object({
+    push: z.number().int().nonnegative(),
+    pull: z.number().int().nonnegative(),
+    squat: z.number().int().nonnegative(),
+    hinge: z.number().int().nonnegative(),
+    verticalPush: z.number().int().nonnegative(),
+    core: z.number().int().nonnegative(),
+  })
+  .strict()
+
+export const AssessmentStateSchema = z
+  .object({
+    status: z.union([z.literal("notStarted"), z.literal("inProgress"), z.literal("complete")]),
+    currentCategoryId: CategoryIdSchema.nullable(),
+    nextLevelByCategory: AssessmentProgressByCategorySchema,
+    lastSafeLevelByCategory: AssessmentProgressByCategorySchema,
+  })
+  .strict()
+
 export const StoredStateSchema = z
   .object({
     schemaVersion: z.literal(SCHEMA_VERSION),
@@ -70,6 +90,7 @@ export const StoredStateSchema = z
       .strict(),
     completedSessions: z.array(CompletedSessionSchema).readonly(),
     activeSession: ActiveSessionSchema.nullable(),
+    assessment: AssessmentStateSchema,
   })
   .strict()
 
@@ -92,6 +113,7 @@ export const LegacyV0StateSchema = z
   .strict()
 
 export type ActiveSession = z.infer<typeof ActiveSessionSchema>
+export type AssessmentState = z.infer<typeof AssessmentStateSchema>
 export type StoredState = z.infer<typeof StoredStateSchema>
 
 export type StorageRecoveryReason =

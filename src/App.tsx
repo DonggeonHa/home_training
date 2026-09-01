@@ -1,17 +1,23 @@
 import { Barbell, Moon, Sun } from "@phosphor-icons/react"
 import { useState } from "react"
 import { AppRoutes, PrimaryNavigation } from "./app/routes"
+import { AppStoreProvider } from "./app/store/provider"
 import { isThemePreference, useThemePreference } from "./app/theme"
 import { Button, Dialog } from "./shared/ui"
+import type { StoragePort } from "./storage/ports"
 import "./styles/layout.css"
 import "./styles/ui.css"
 
-export function App() {
+type AppProps = {
+  readonly storage?: StoragePort | undefined
+}
+
+export function App({ storage }: AppProps) {
   const [safetyDialogOpen, setSafetyDialogOpen] = useState(false)
   const { motionClass, preference, resolvedTheme, setPreference } = useThemePreference()
 
   return (
-    <>
+    <AppStoreProvider storage={storage}>
       {/* biome-ignore lint/a11y/useValidAnchor: skip links are anchors, and the handler repairs browser focus transfer to main. */}
       <a
         className="skip-link"
@@ -76,6 +82,6 @@ export function App() {
           </ul>
         </Dialog>
       </div>
-    </>
+    </AppStoreProvider>
   )
 }

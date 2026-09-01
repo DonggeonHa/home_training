@@ -1,6 +1,6 @@
 import { type CategoryProgressById, SCHEMA_VERSION } from "../domain/contracts"
 import { CategoryIdSchema } from "../domain/schemas"
-import type { StoredState } from "./schemas"
+import type { AssessmentState, StoredState } from "./schemas"
 
 export function createDefaultStoredState(): StoredState {
   return {
@@ -10,6 +10,30 @@ export function createDefaultStoredState(): StoredState {
     progress: createDefaultProgress(),
     completedSessions: [],
     activeSession: null,
+    assessment: createDefaultAssessmentState(),
+  }
+}
+
+export function createDefaultAssessmentState(): AssessmentState {
+  return {
+    status: "notStarted",
+    currentCategoryId: null,
+    nextLevelByCategory: {
+      push: 0,
+      pull: 0,
+      squat: 0,
+      hinge: 0,
+      verticalPush: 0,
+      core: 0,
+    },
+    lastSafeLevelByCategory: {
+      push: 0,
+      pull: 0,
+      squat: 0,
+      hinge: 0,
+      verticalPush: 0,
+      core: 0,
+    },
   }
 }
 

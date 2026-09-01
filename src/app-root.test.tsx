@@ -7,16 +7,36 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { App } from "./App"
 import { resolveMotionClass, resolveThemePreference, storeThemePreference } from "./app/theme"
 import { Button, Dialog, Field, Progress } from "./shared/ui"
+import { APP_STORAGE_KEY } from "./storage"
+import { createDefaultStoredState } from "./storage/defaults"
+import { MemoryStoragePort } from "./storage/test-ports"
 
 const originalShowModal = HTMLDialogElement.prototype.showModal
 const originalClose = HTMLDialogElement.prototype.close
 
-function renderAppAtHash(path: string) {
+function createCompletedOnboardingStorage() {
+  const storage = new MemoryStoragePort()
+  storage.values.set(
+    APP_STORAGE_KEY,
+    JSON.stringify({
+      ...createDefaultStoredState(),
+      safety: { cleared: true, clearedAt: "2026-09-02T00:00:00.000Z" },
+      assessment: {
+        ...createDefaultStoredState().assessment,
+        status: "complete",
+        currentCategoryId: null,
+      },
+    }),
+  )
+  return storage
+}
+
+function renderAppAtHash(path: string, storage = new MemoryStoragePort()) {
   window.location.hash = path
 
   return render(
     <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-      <App />
+      <App storage={storage} />
     </HashRouter>,
   )
 }
@@ -28,10 +48,10 @@ describe("App root", () => {
     HTMLDialogElement.prototype.close = originalClose
   })
 
-  it("renders the Korean app title when the route shell starts", () => {
+  it("renders the first-run safety gate when the home route starts", () => {
     renderAppAtHash("/")
 
-    expect(screen.getByRole("heading", { level: 1, name: "홈트레이닝 LEVEL UP" })).toBeVisible()
+    expect(screen.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
   })
 
   it("exposes a skip link, banner, navigation, and main landmark", async () => {
@@ -86,18 +106,34 @@ describe("App root", () => {
     expect(main).toHaveAttribute("tabindex", "-1")
     expect(main).toHaveFocus()
     expect(window.location.hash).toBe(originalHash)
-    expect(screen.getByRole("heading", { level: 1, name: "홈트레이닝 LEVEL UP" })).toBeVisible()
+    expect(screen.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
   })
 
-  it("marks the active nav item from hash routing and renders unknown hashes intentionally", () => {
+  it("keeps every normal route behind the global first-run onboarding gate", () => {
     renderAppAtHash("/record")
+
+    const nav = screen.getByRole("navigation", { name: "주요 메뉴" })
+    expect(within(nav).getByRole("link", { name: "기록" })).toHaveAttribute("aria-current", "page")
+    expect(screen.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
+    expect(screen.queryByRole("heading", { level: 1, name: "기록" })).not.toBeInTheDocument()
+
+    cleanup()
+    renderAppAtHash("/unsupported")
+    expect(screen.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
+    expect(
+      screen.queryByRole("heading", { level: 1, name: "페이지를 찾을 수 없습니다" }),
+    ).not.toBeInTheDocument()
+  })
+
+  it("renders selected routes and unknown hashes after onboarding is complete", () => {
+    renderAppAtHash("/record", createCompletedOnboardingStorage())
 
     const nav = screen.getByRole("navigation", { name: "주요 메뉴" })
     expect(within(nav).getByRole("link", { name: "기록" })).toHaveAttribute("aria-current", "page")
     expect(screen.getByRole("heading", { level: 1, name: "기록" })).toBeVisible()
 
     cleanup()
-    renderAppAtHash("/unsupported")
+    renderAppAtHash("/unsupported", createCompletedOnboardingStorage())
     expect(
       screen.getByRole("heading", { level: 1, name: "페이지를 찾을 수 없습니다" }),
     ).toBeVisible()

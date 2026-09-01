@@ -2,16 +2,16 @@ import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 
 const routeCases = [
-  { hash: "#/", heading: "홈트레이닝 LEVEL UP", theme: "light" },
-  { hash: "#/", heading: "홈트레이닝 LEVEL UP", theme: "dark" },
-  { hash: "#/levels", heading: "레벨", theme: "light" },
-  { hash: "#/levels", heading: "레벨", theme: "dark" },
-  { hash: "#/record", heading: "기록", theme: "light" },
-  { hash: "#/record", heading: "기록", theme: "dark" },
-  { hash: "#/plan", heading: "계획", theme: "light" },
-  { hash: "#/plan", heading: "계획", theme: "dark" },
-  { hash: "#/unsupported", heading: "페이지를 찾을 수 없습니다", theme: "light" },
-  { hash: "#/unsupported", heading: "페이지를 찾을 수 없습니다", theme: "dark" },
+  { hash: "#/", heading: "운동 전 안전 확인", theme: "light" },
+  { hash: "#/", heading: "운동 전 안전 확인", theme: "dark" },
+  { hash: "#/levels", heading: "운동 전 안전 확인", theme: "light" },
+  { hash: "#/levels", heading: "운동 전 안전 확인", theme: "dark" },
+  { hash: "#/record", heading: "운동 전 안전 확인", theme: "light" },
+  { hash: "#/record", heading: "운동 전 안전 확인", theme: "dark" },
+  { hash: "#/plan", heading: "운동 전 안전 확인", theme: "light" },
+  { hash: "#/plan", heading: "운동 전 안전 확인", theme: "dark" },
+  { hash: "#/unsupported", heading: "운동 전 안전 확인", theme: "light" },
+  { hash: "#/unsupported", heading: "운동 전 안전 확인", theme: "dark" },
 ] as const
 
 test.describe("app shell accessibility", () => {
@@ -38,7 +38,7 @@ test.describe("app shell accessibility", () => {
 
     await expect(page.getByRole("main")).toBeFocused()
     await expect(page).toHaveURL(/#\/$/)
-    await expect(page.getByRole("heading", { level: 1, name: "홈트레이닝 LEVEL UP" })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
   })
 
   test("opens the safety principles dialog as a modal and restores focus", async ({ page }) => {

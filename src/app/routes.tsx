@@ -1,6 +1,7 @@
 import type { Icon } from "@phosphor-icons/react"
 import { CalendarCheck, ClipboardText, House, Pulse, TreeStructure } from "@phosphor-icons/react"
 import { NavLink, Route, Routes } from "react-router-dom"
+import { OnboardingGate } from "../features/onboarding/OnboardingGate"
 import { Card, Notice, Progress } from "../shared/ui"
 
 type RouteDefinition = {
@@ -89,11 +90,13 @@ function NotFoundPage() {
 
 export function AppRoutes() {
   return (
-    <Routes>
-      {routes.map((route) => (
-        <Route element={<RouteLanding route={route} />} key={route.href} path={route.href} />
-      ))}
-      <Route element={<NotFoundPage />} path="*" />
-    </Routes>
+    <OnboardingGate>
+      <Routes>
+        {routes.map((route) => (
+          <Route element={<RouteLanding route={route} />} key={route.href} path={route.href} />
+        ))}
+        <Route element={<NotFoundPage />} path="*" />
+      </Routes>
+    </OnboardingGate>
   )
 }
