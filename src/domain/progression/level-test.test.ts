@@ -36,6 +36,7 @@ const progress = (): CategoryProgress => ({
 const singleSet = (value: number): SetRecord => ({
   kind: "single",
   value,
+  rir: 2,
   quality: { pain: false, form: "good", rom: "full" },
 })
 
@@ -43,6 +44,7 @@ const perSideSet = (left: number, right: number): SetRecord => ({
   kind: "perSide",
   left,
   right,
+  rir: 2,
   quality: { pain: false, form: "good", rom: "full" },
 })
 
@@ -96,6 +98,45 @@ describe("evaluateLevelTest", () => {
     })
 
     // Then: current level and unlocked status are preserved.
+    expect(result).toEqual({
+      kind: "failed",
+      reason: "set-below-minimum",
+      progress: currentProgress,
+    })
+  })
+
+  it("fails and preserves progress when next-level numeric sets pass with bad quality", () => {
+    const currentProgress = progress()
+    const painfulSet = {
+      ...singleSet(8),
+      quality: { pain: true, form: "good" as const, rom: "full" as const },
+    }
+
+    const result = evaluateLevelTest({
+      progress: currentProgress,
+      currentLevel: 3,
+      nextLevel: 4,
+      entry: entry({ ...repsRule, min: 8, max: 12 }, [painfulSet, singleSet(8), singleSet(8)]),
+    })
+
+    expect(result).toEqual({
+      kind: "failed",
+      reason: "set-below-minimum",
+      progress: currentProgress,
+    })
+  })
+
+  it("fails rep and tempo tests when final RIR is outside one to two", () => {
+    const currentProgress = progress()
+    const highRirSet = { ...singleSet(8), rir: 4 }
+
+    const result = evaluateLevelTest({
+      progress: currentProgress,
+      currentLevel: 3,
+      nextLevel: 4,
+      entry: entry({ ...repsRule, min: 8, max: 12 }, [singleSet(8), singleSet(8), highRirSet]),
+    })
+
     expect(result).toEqual({
       kind: "failed",
       reason: "set-below-minimum",

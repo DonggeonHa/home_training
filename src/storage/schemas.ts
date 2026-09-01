@@ -9,6 +9,89 @@ import {
 
 const CompletedSetIndexesSchema = z.array(z.number().int().nonnegative()).readonly()
 
+const CategoryWarmupStateSchema = z
+  .object({
+    push: z.boolean(),
+    pull: z.boolean(),
+    squat: z.boolean(),
+    hinge: z.boolean(),
+    verticalPush: z.boolean(),
+    core: z.boolean(),
+  })
+  .strict()
+
+const ActiveWorkoutCategoryPlanSchema = z
+  .object({
+    categoryId: CategoryIdSchema,
+    categoryTitle: z.string().min(1),
+    prescribedSetCount: z.number().int().positive(),
+    restSeconds: z.number().int().nonnegative(),
+    instructions: z.array(z.string().min(1)).readonly(),
+    mistakes: z.array(z.string().min(1)).readonly(),
+    safety: z.array(z.string().min(1)).readonly(),
+    entry: SessionEntrySchema,
+    testAttemptEntry: SessionEntrySchema.optional(),
+    qualification: z.null(),
+    stoppedByPain: z.boolean(),
+    pullChecklistConfirmed: z.boolean(),
+    testFallbackLevel: z.number().int().nonnegative().optional(),
+  })
+  .strict()
+
+const ActiveWorkoutSetDraftSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("single"),
+      valueText: z.string(),
+      rirText: z.string(),
+      loadText: z.string(),
+      quality: z
+        .object({
+          pain: z.boolean(),
+          form: z.union([z.literal("good"), z.literal("limited"), z.literal("failed")]),
+          rom: z.union([z.literal("full"), z.literal("partial"), z.literal("failed")]),
+        })
+        .strict(),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("perSide"),
+      leftText: z.string(),
+      rightText: z.string(),
+      rirText: z.string(),
+      loadText: z.string(),
+      quality: z
+        .object({
+          pain: z.boolean(),
+          form: z.union([z.literal("good"), z.literal("limited"), z.literal("failed")]),
+          rom: z.union([z.literal("full"), z.literal("partial"), z.literal("failed")]),
+        })
+        .strict(),
+    })
+    .strict(),
+])
+
+const ActiveWorkoutSnapshotSchema = z
+  .object({
+    currentCategoryIndex: z.number().int().nonnegative(),
+    currentSetIndex: z.number().int().nonnegative(),
+    phase: z.union([
+      z.literal("guidance"),
+      z.literal("setEntry"),
+      z.literal("rest"),
+      z.literal("complete"),
+    ]),
+    commonWarmupComplete: z.boolean(),
+    categoryWarmupCompleteByCategory: CategoryWarmupStateSchema,
+    categoryPlans: z.array(ActiveWorkoutCategoryPlanSchema).readonly(),
+    setDraft: ActiveWorkoutSetDraftSchema.nullable(),
+    error: z.string().nullable(),
+    showAbandonDialog: z.boolean(),
+    lastAnnouncement: z.union([z.literal("30"), z.literal("10"), z.literal("0")]).nullable(),
+  })
+  .strict()
+
 export const ActiveSessionSchema = z
   .object({
     id: SessionIdSchema,
@@ -27,6 +110,7 @@ export const ActiveSessionSchema = z
       })
       .strict()
       .nullable(),
+    workout: ActiveWorkoutSnapshotSchema.optional(),
   })
   .strict()
 

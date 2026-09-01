@@ -86,7 +86,7 @@ export function getRemainingConditions(entry: SessionEntry): readonly RemainingC
 }
 
 export function evaluateLevelTest(input: EvaluateLevelTestInput): LevelTestResult {
-  const evaluation = evaluateMetric(input.entry.metricRule, input.entry.sets, "minimum")
+  const evaluation = evaluateEntry(input.entry, "minimum")
   const firstMiss = evaluation.remainingConditions[0]
   if (
     (firstMiss?.kind === "set-upper-bound" || firstMiss?.kind === "side-upper-bound") &&

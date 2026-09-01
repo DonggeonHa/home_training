@@ -16,4 +16,5 @@ export type {
   SafetyBlock,
   SafetyBlockReason,
   SafetyGate,
+  WorkoutCompletionPatch,
 } from "./types"

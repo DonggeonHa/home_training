@@ -13,13 +13,21 @@ import { saveStoredState } from "../../storage/persistence"
 import { BrowserLocalStoragePort, type StoragePort } from "../../storage/ports"
 import { createAppStoreState, reduceAppStore, toStoredState } from "./reducer"
 import { currentCategoryKey } from "./selectors"
-import type { AppStoreAction, AppStoreState, AssessmentSetInput, SafetyAnswers } from "./types"
+import type {
+  AppStoreAction,
+  AppStoreState,
+  AssessmentSetInput,
+  SafetyAnswers,
+  WorkoutCompletionPatch,
+} from "./types"
 
 type AppActions = {
   readonly submitSafetyAnswers: (answers: SafetyAnswers) => void
   readonly resetSafetyReview: () => void
   readonly startAssessment: () => void
   readonly submitAssessmentSet: (input: AssessmentSetInput) => void
+  readonly changeActiveSession: (activeSession: AppStoreState["stored"]["activeSession"]) => void
+  readonly applyWorkoutCompletion: (patch: WorkoutCompletionPatch) => void
 }
 
 type AppStoreContextValue = {
@@ -110,10 +118,33 @@ function useAppActionCreators(
     },
     [dispatch, state.stored.assessment],
   )
+  const changeActiveSession = useCallback(
+    (activeSession: AppStoreState["stored"]["activeSession"]) =>
+      dispatch({ type: "activeSessionChanged", activeSession }),
+    [dispatch],
+  )
+  const applyWorkoutCompletion = useCallback(
+    (patch: WorkoutCompletionPatch) => dispatch({ type: "workoutCompletionApplied", patch }),
+    [dispatch],
+  )
 
   return useMemo(
-    () => ({ submitSafetyAnswers, resetSafetyReview, startAssessment, submitAssessmentSet }),
-    [resetSafetyReview, startAssessment, submitAssessmentSet, submitSafetyAnswers],
+    () => ({
+      applyWorkoutCompletion,
+      changeActiveSession,
+      resetSafetyReview,
+      startAssessment,
+      submitAssessmentSet,
+      submitSafetyAnswers,
+    }),
+    [
+      applyWorkoutCompletion,
+      changeActiveSession,
+      resetSafetyReview,
+      startAssessment,
+      submitAssessmentSet,
+      submitSafetyAnswers,
+    ],
   )
 }
 

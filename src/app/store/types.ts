@@ -1,4 +1,10 @@
-import type { CategoryId, SetQuality } from "../../domain/contracts"
+import type {
+  CategoryId,
+  CategoryProgressById,
+  CompletedSession,
+  RoutineId,
+  SetQuality,
+} from "../../domain/contracts"
 import type {
   StorageLoadNotice,
   StorageSaveFailureReason,
@@ -41,6 +47,13 @@ export type AppStoreState = {
   readonly loadNotice?: StorageLoadNotice | undefined
   readonly saveNotice?: AppSaveNotice | undefined
   readonly safetyBlock?: SafetyBlock | undefined
+}
+
+export type WorkoutCompletionPatch = {
+  readonly activeSession: null
+  readonly completedSession?: CompletedSession | undefined
+  readonly nextRoutine?: RoutineId | undefined
+  readonly progress?: CategoryProgressById | undefined
 }
 
 export type AssessmentSetInput =
@@ -92,5 +105,13 @@ export type AppStoreAction =
   | {
       readonly type: "saveFailed"
       readonly reason: StorageSaveFailureReason
+    }
+  | {
+      readonly type: "activeSessionChanged"
+      readonly activeSession: StoredState["activeSession"]
+    }
+  | {
+      readonly type: "workoutCompletionApplied"
+      readonly patch: WorkoutCompletionPatch
     }
   | { readonly type: "saveSucceeded" }

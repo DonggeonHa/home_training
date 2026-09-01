@@ -1,0 +1,157 @@
+.workout-page {
+  display: grid;
+  width: min(100%, 920px);
+  gap: var(--space-5);
+}
+
+.workout-page.compact {
+  padding: var(--space-6);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--space-2);
+  background: var(--surface-elevated);
+}
+
+.workout-hero,
+.workout-panel,
+.workout-rest,
+.workout-dialog {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--space-2);
+  background: var(--surface-elevated);
+}
+
+.workout-hero {
+  background: var(--surface-secondary);
+}
+
+.workout-hero h1,
+.workout-page h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.workout-page h2,
+.workout-page h3,
+.workout-page p,
+.workout-page legend {
+  margin: 0;
+}
+
+.workout-page h2,
+.workout-page legend {
+  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.workout-page h3 {
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.workout-page p,
+.workout-list,
+.workout-set-list {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.workout-list,
+.workout-set-list {
+  display: grid;
+  gap: var(--space-2);
+  padding-inline-start: var(--space-5);
+  margin: 0;
+}
+
+.workout-check,
+.workout-field {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--text-primary);
+}
+
+.workout-field {
+  grid-template-columns: 92px minmax(0, 1fr);
+}
+
+.workout-field input {
+  min-height: 44px;
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--space-2);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+}
+
+.workout-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.workout-rest {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.workout-timer {
+  color: var(--text-primary);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.workout-actions,
+.workout-sticky {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.workout-sticky {
+  position: sticky;
+  bottom: calc(var(--space-4) + 68px);
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--space-2);
+  background: var(--surface-elevated);
+}
+
+.workout-dialog {
+  position: fixed;
+  z-index: 3;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  left: var(--space-4);
+  border-color: var(--status-error);
+}
+
+@media (min-width: 768px) {
+  .workout-page {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workout-hero,
+  .workout-rest,
+  .workout-sticky {
+    grid-column: 1 / -1;
+  }
+
+  .workout-dialog {
+    right: var(--space-8);
+    left: auto;
+    width: 420px;
+  }
+}

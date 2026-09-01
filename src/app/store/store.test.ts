@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { SessionIdSchema } from "../../domain/schemas"
 import { APP_STORAGE_KEY } from "../../storage"
 import { createDefaultStoredState } from "../../storage/defaults"
 import { MemoryStoragePort } from "../../storage/test-ports"
@@ -141,15 +142,56 @@ describe("app store hydration and safety reducer", () => {
     expect(recovered.saveNotice).toBeUndefined()
   })
 
+  it("applies active-session updates and clears them on abandon", () => {
+    const state = createAppStoreState({ storage: new MemoryStoragePort() })
+    const activeSession = {
+      id: SessionIdSchema.parse("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+      routineId: "A" as const,
+      startedAt: now,
+      currentEntry: { categoryId: state.stored.progress.squat.categoryId, level: 0 },
+      completedSetIndexes: [],
+      restTimer: null,
+    }
+
+    const updated = reduceAppStore(state, { type: "activeSessionChanged", activeSession })
+    const cleared = reduceAppStore(updated, { type: "activeSessionChanged", activeSession: null })
+
+    expect(updated.stored.activeSession).toEqual(activeSession)
+    expect(cleared.stored.activeSession).toBeNull()
+  })
+
+  it("applies workout completion patches atomically and idempotently", () => {
+    const state = createAppStoreState({ storage: new MemoryStoragePort() })
+    const completedSession = {
+      id: SessionIdSchema.parse("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"),
+      routineId: "A" as const,
+      completedAt: now,
+      entries: [],
+    }
+    const patch = {
+      activeSession: null,
+      completedSession,
+      nextRoutine: "B" as const,
+      progress: state.stored.progress,
+    }
+
+    const completed = reduceAppStore(state, { type: "workoutCompletionApplied", patch })
+    const repeated = reduceAppStore(completed, { type: "workoutCompletionApplied", patch })
+
+    expect(completed.stored).toMatchObject({
+      activeSession: null,
+      nextRoutine: "B",
+      completedSessions: [completedSession],
+    })
+    expect(repeated.stored.completedSessions).toHaveLength(1)
+  })
+
   it("throws on unsupported reducer actions in exhaustive builds", () => {
     // Given: an impossible action reaches the reducer.
     const state = createAppStoreState({ storage: new MemoryStoragePort() })
+    const malformedAction = JSON.parse('{"type":"unsupportedAction"}')
 
     // When / Then: the exhaustive guard fails loudly.
-    expect(() =>
-      reduceAppStore(state, { type: "unsupportedAction" } as unknown as Parameters<
-        typeof reduceAppStore
-      >[1]),
-    ).toThrow(/unsupportedAction/)
+    expect(() => reduceAppStore(state, malformedAction)).toThrow(/unsupportedAction/)
   })
 })

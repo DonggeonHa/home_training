@@ -16,8 +16,7 @@ type MetricGate = {
 export function evaluateEntry(entry: SessionEntry, mode: GateMode): Evaluation {
   const metricEvaluation = evaluateMetric(entry.metricRule, entry.sets, mode)
   const qualityEvaluation = evaluateQuality(entry.sets)
-  const rirEvaluation =
-    mode === "upper" ? evaluateFinalRir(entry.metricRule, entry.sets) : emptyEvaluation()
+  const rirEvaluation = evaluateFinalRir(entry.metricRule, entry.sets)
   return combineEvaluations([metricEvaluation, qualityEvaluation, rirEvaluation])
 }
 
