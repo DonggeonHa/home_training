@@ -8,26 +8,15 @@ import { App } from "./App"
 import { resolveMotionClass, resolveThemePreference, storeThemePreference } from "./app/theme"
 import { Button, Dialog, Field, Progress } from "./shared/ui"
 import { APP_STORAGE_KEY } from "./storage"
-import { createDefaultStoredState } from "./storage/defaults"
 import { MemoryStoragePort } from "./storage/test-ports"
+import { createCompletedOnboardingState } from "./test/onboarding-fixtures"
 
 const originalShowModal = HTMLDialogElement.prototype.showModal
 const originalClose = HTMLDialogElement.prototype.close
 
 function createCompletedOnboardingStorage() {
   const storage = new MemoryStoragePort()
-  storage.values.set(
-    APP_STORAGE_KEY,
-    JSON.stringify({
-      ...createDefaultStoredState(),
-      safety: { cleared: true, clearedAt: "2026-09-02T00:00:00.000Z" },
-      assessment: {
-        ...createDefaultStoredState().assessment,
-        status: "complete",
-        currentCategoryId: null,
-      },
-    }),
-  )
+  storage.values.set(APP_STORAGE_KEY, JSON.stringify(createCompletedOnboardingState()))
   return storage
 }
 

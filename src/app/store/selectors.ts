@@ -1,6 +1,6 @@
 import { assertNever } from "../../domain/assert-never"
 import { EXERCISE_CATALOG } from "../../domain/catalog"
-import { CATEGORY_IDS, type CategoryId } from "../../domain/contracts"
+import { CATEGORY_IDS, type CategoryId, type ProgressStatus } from "../../domain/contracts"
 import type { AppStoreState, AssessmentStep, SafetyGate } from "./types"
 
 export function selectSafetyGate(state: AppStoreState): SafetyGate {
@@ -12,7 +12,11 @@ export function selectSafetyGate(state: AppStoreState): SafetyGate {
 }
 
 export function selectCanUseDashboard(state: AppStoreState): boolean {
-  return state.stored.safety.cleared && state.stored.assessment.status === "complete"
+  return (
+    state.stored.safety.cleared &&
+    state.stored.assessment.status === "complete" &&
+    hasUsableProgressForEveryCatalogCategory(state)
+  )
 }
 
 export function selectAssessmentStep(state: AppStoreState): AssessmentStep {
@@ -24,12 +28,24 @@ export function selectAssessmentStep(state: AppStoreState): AssessmentStep {
     case "notStarted":
       return { kind: "ready" }
     case "complete":
-      return { kind: "complete" }
+      return hasUsableProgressForEveryCatalogCategory(state)
+        ? { kind: "complete" }
+        : { kind: "ready" }
     case "inProgress":
       return readActiveAssessmentStep(state)
     default:
       return assertNever(state.stored.assessment.status)
   }
+}
+
+const usableProgressStatuses = new Set<ProgressStatus>(["provisional", "active", "testUnlocked"])
+
+function hasUsableProgressForEveryCatalogCategory(state: AppStoreState): boolean {
+  return EXERCISE_CATALOG.every((category) => {
+    const categoryKey = currentCategoryKey(category.id)
+    const progress = state.stored.progress[categoryKey]
+    return progress?.categoryId === category.id && usableProgressStatuses.has(progress.status)
+  })
 }
 
 function readActiveAssessmentStep(state: AppStoreState): AssessmentStep {

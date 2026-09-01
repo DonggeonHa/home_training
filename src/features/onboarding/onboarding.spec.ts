@@ -1,7 +1,57 @@
 import AxeBuilder from "@axe-core/playwright"
-import { expect, test } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
 
 const persistedStateKey = "home-training-level-up:v1"
+const categoryIds = ["push", "pull", "squat", "hinge", "verticalPush", "core"] as const
+
+function buildSeededState(statusByCategory: Partial<Record<(typeof categoryIds)[number], string>>) {
+  const progress = Object.fromEntries(
+    categoryIds.map((categoryId) => [
+      categoryId,
+      {
+        categoryId,
+        level: 0,
+        status: statusByCategory[categoryId] ?? "unassessed",
+      },
+    ]),
+  )
+
+  return {
+    schemaVersion: 1,
+    safety: { cleared: true, clearedAt: "2026-09-02T00:00:00.000Z" },
+    nextRoutine: "A",
+    progress,
+    completedSessions: [],
+    activeSession: null,
+    assessment: {
+      status: "complete",
+      currentCategoryId: null,
+      nextLevelByCategory: {
+        push: 0,
+        pull: 0,
+        squat: 0,
+        hinge: 0,
+        verticalPush: 0,
+        core: 0,
+      },
+      lastSafeLevelByCategory: {
+        push: 0,
+        pull: 0,
+        squat: 0,
+        hinge: 0,
+        verticalPush: 0,
+        core: 0,
+      },
+    },
+  }
+}
+
+async function seedPersistedState(page: Page, state: unknown) {
+  await page.addInitScript(({ key, value }) => localStorage.setItem(key, JSON.stringify(value)), {
+    key: persistedStateKey,
+    value: state,
+  })
+}
 
 test.describe("onboarding safety and assessment", () => {
   test("clears safety and persists only minimal safety state on mobile", async ({ page }) => {
@@ -46,6 +96,62 @@ test.describe("onboarding safety and assessment", () => {
     // Then: route content is not reachable before safety and assessment.
     await expect(page.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
     await expect(page.getByRole("heading", { level: 1, name: "기록" })).toBeHidden()
+    expect(await new AxeBuilder({ page }).analyze()).toMatchObject({ violations: [] })
+  })
+
+  test("gates seeded complete assessments that still have unassessed progress", async ({
+    page,
+  }) => {
+    // Given: persisted state says assessment is complete, but category progress is still unassessed.
+    await seedPersistedState(page, buildSeededState({}))
+    await page.goto("/#/record")
+
+    // Then: the global gate keeps route content hidden and restarts assessment onboarding.
+    await expect(page.getByRole("heading", { level: 1, name: "기초 레벨 평가" })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "기록" })).toBeHidden()
+    expect(await new AxeBuilder({ page }).analyze()).toMatchObject({ violations: [] })
+  })
+
+  test("gates seeded complete assessments with missing progress", async ({ page }) => {
+    // Given: malformed persisted progress is missing a required category.
+    const completeState = buildSeededState({
+      push: "provisional",
+      pull: "active",
+      squat: "testUnlocked",
+      hinge: "provisional",
+      verticalPush: "active",
+    })
+    const { core: _missingCore, ...progressWithoutCore } = completeState.progress
+    const missingCoreState = { ...completeState, progress: progressWithoutCore }
+    await seedPersistedState(page, missingCoreState)
+    await page.goto("/#/record")
+
+    // Then: parsed hydration recovers safely and no deep-linked route content appears.
+    await expect(page.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "기록" })).toBeHidden()
+    expect(await new AxeBuilder({ page }).analyze()).toMatchObject({ violations: [] })
+  })
+
+  test("allows seeded complete assessments with provisional active and test-unlocked progress", async ({
+    page,
+  }) => {
+    // Given: every category has a usable progress status after safety and assessment completion.
+    await seedPersistedState(
+      page,
+      buildSeededState({
+        push: "provisional",
+        pull: "active",
+        squat: "testUnlocked",
+        hinge: "provisional",
+        verticalPush: "active",
+        core: "testUnlocked",
+      }),
+    )
+    await page.goto("/#/record")
+
+    // Then: the deep-linked app route is reachable.
+    await expect(page.getByRole("heading", { level: 1, name: "기록" })).toBeVisible()
+    await expect(page.getByRole("heading", { level: 1, name: "기초 레벨 평가" })).toBeHidden()
     expect(await new AxeBuilder({ page }).analyze()).toMatchObject({ violations: [] })
   })
 
