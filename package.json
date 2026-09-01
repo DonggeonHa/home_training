@@ -16,9 +16,7 @@
     "@phosphor-icons/react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "react-grab": "latest",
     "react-router-dom": "^6.30.6",
-    "react-scan": "latest",
     "zod": "latest"
   },
   "devDependencies": {
@@ -34,6 +32,8 @@
     "jsdom": "^26.1.0",
     "playwright": "latest",
     "react-doctor": "latest",
+    "react-grab": "latest",
+    "react-scan": "latest",
     "typescript": "^5.9.3",
     "vite": "^4.5.14",
     "vitest": "^0.34.6"

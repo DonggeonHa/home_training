@@ -20,15 +20,9 @@ importers:
       react-dom:
         specifier: latest
         version: 19.2.8(react@19.2.8)
-      react-grab:
-        specifier: latest
-        version: 0.2.0(react@19.2.8)
       react-router-dom:
         specifier: ^6.30.6
         version: 6.30.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      react-scan:
-        specifier: latest
-        version: 0.5.7(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(esbuild@0.28.2)(eslint@10.9.1(jiti@2.7.0))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.6)(rollup@4.63.1)(vite@4.5.14(@types/node@26.4.0)(lightningcss@1.33.0))
       zod:
         specifier: latest
         version: 4.5.4
@@ -69,6 +63,12 @@ importers:
       react-doctor:
         specifier: latest
         version: 0.9.12(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(eslint@10.9.1(jiti@2.7.0))
+      react-grab:
+        specifier: latest
+        version: 0.2.0(react@19.2.8)
+      react-scan:
+        specifier: latest
+        version: 0.5.7(@opentelemetry/core@2.10.0(@opentelemetry/api@1.9.1))(esbuild@0.28.2)(eslint@10.9.1(jiti@2.7.0))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.6)(rollup@4.63.1)(vite@4.5.14(@types/node@26.4.0)(lightningcss@1.33.0))
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
