@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { getNextRoutine, ROUTINE_SEQUENCE, ROUTINES } from "./routines"
+import { getNextRoutine, getPrescribedSetCount, ROUTINE_SEQUENCE, ROUTINES } from "./routines"
 import { CategoryIdSchema } from "./schemas"
 
 describe("routine constants", () => {
@@ -29,5 +29,24 @@ describe("routine constants", () => {
     expect(getNextRoutine("A")).toBe("B")
     expect(getNextRoutine("B")).toBe("C")
     expect(getNextRoutine("C")).toBe("A")
+  })
+
+  it("prescribes two sets before session six completes and three sets from session seven", () => {
+    // Given: completed-session counts before starting the next session.
+    const sessionOrdinals = [5, 6, 7] as const
+
+    // When: prescribed set counts are requested.
+    const setCounts = sessionOrdinals.map(getPrescribedSetCount)
+
+    // Then: count 6 means the first six sessions are done, so session 7 uses three sets.
+    expect(setCounts).toEqual([2, 3, 3])
+  })
+
+  it("rejects malformed routine IDs at the exhaustive guard", () => {
+    // Given: an impossible routine ID reaches the pure function from malformed state.
+    const malformedRoutine = JSON.parse('"Z"')
+
+    // When / Then: the exhaustive guard rejects it.
+    expect(() => getNextRoutine(malformedRoutine)).toThrow("Unexpected domain variant")
   })
 })

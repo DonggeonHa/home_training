@@ -1,4 +1,5 @@
 import { assertNever } from "./assert-never"
+import { ASSESSMENT_CAPS } from "./content/common"
 import type { CategoryId, RoutineId } from "./contracts"
 import { CategoryIdSchema } from "./schemas"
 
@@ -54,4 +55,10 @@ export function getNextRoutine(currentRoutine: RoutineId): RoutineId {
     default:
       return assertNever(currentRoutine)
   }
+}
+
+export function getPrescribedSetCount(completedSessionCount: number): number {
+  return completedSessionCount < ASSESSMENT_CAPS.adaptationSessionCount
+    ? ASSESSMENT_CAPS.adaptationSetCount
+    : ASSESSMENT_CAPS.standardSetCount
 }
