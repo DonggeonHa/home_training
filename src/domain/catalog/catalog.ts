@@ -18,8 +18,10 @@ export type {
   CatalogValidationCategory,
   CatalogValidationError,
   CatalogValidationLevel,
+  CatalogValidationMetricRule,
   CatalogValidationResult,
 } from "./catalog-types"
+export { CATALOG_VALIDATION_ERROR_KINDS } from "./catalog-types"
 export { validateCatalog }
 
 function normalizeUpperBodyCategory(category: UpperBodyCatalog): CatalogCategory {
@@ -45,9 +47,9 @@ function normalizeUpperBodyCategory(category: UpperBodyCatalog): CatalogCategory
       promotable: level.metricRule.kind !== "terminal",
       equipment: level.equipment,
       regressions: [level.regression],
-      instructions: level.instructions.length > 0 ? level.instructions : category.instructions,
-      mistakes: level.mistakes.length > 0 ? level.mistakes : category.mistakes,
-      safety: level.safety.length > 0 ? level.safety : category.stopSignals,
+      instructions: category.instructions,
+      mistakes: category.mistakes,
+      safety: category.stopSignals,
     })),
   }
 }
@@ -107,7 +109,8 @@ export function formatTargetLabel(rule: MetricRule): string {
         rule.minSeconds === rule.maxSeconds
           ? `${rule.minSeconds}초`
           : `${rule.minSeconds}~${rule.maxSeconds}초`
-      return `${seconds} × ${rule.sets}세트`
+      const prefix = rule.laterality === "perSide" ? "좌우 " : ""
+      return `${prefix}${seconds} × ${rule.sets}세트`
     }
     case "tempoReps": {
       const reps = rule.min === rule.max ? `${rule.min}회` : `${rule.min}~${rule.max}회`

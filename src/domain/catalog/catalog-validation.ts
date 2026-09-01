@@ -1,11 +1,13 @@
 import { assertNever } from "../assert-never"
-import type { CategoryId } from "../contracts"
 import { CATEGORY_IDS } from "../contracts"
 import type {
   CatalogValidationCategory,
   CatalogValidationLevel,
   CatalogValidationResult,
 } from "./catalog-types"
+
+type ExpectedCatalogCategory = CatalogValidationCategory & { readonly id: ExpectedCategoryId }
+type ExpectedCategoryId = (typeof CATEGORY_IDS)[number]
 
 const EXPECTED_LEVEL_COUNTS = {
   push: 8,
@@ -14,7 +16,7 @@ const EXPECTED_LEVEL_COUNTS = {
   hinge: 8,
   verticalPush: 9,
   core: 8,
-} as const satisfies Record<(typeof CATEGORY_IDS)[number], number>
+} as const satisfies Record<ExpectedCategoryId, number>
 
 const TERMINAL_LEVEL = {
   categoryId: "verticalPush",
@@ -33,7 +35,9 @@ export function validateCatalog(
   const levelKeyOwners = new Map<string, string>()
   let terminalFound = false
 
-  for (const category of catalog) {
+  const expectedCatalog = catalog.filter(isExpectedCatalogCategory)
+
+  for (const category of expectedCatalog) {
     const categoryResult = validateCategory(category, levelKeyOwners)
     if (categoryResult.kind === "invalid") {
       return categoryResult
@@ -47,6 +51,12 @@ export function validateCatalog(
   }
 
   if (!terminalFound) {
+    if (hasNonTerminalFreeHspu(expectedCatalog)) {
+      return {
+        kind: "invalid",
+        error: { kind: "free-hspu-must-be-terminal" },
+      }
+    }
     return {
       kind: "invalid",
       error: {
@@ -69,13 +79,10 @@ function validateCategoryOrder(
     if (seenCategoryIds.has(category.id)) {
       return { kind: "invalid", error: { kind: "duplicate-category-id", categoryId: category.id } }
     }
-    seenCategoryIds.add(category.id)
-  }
-
-  for (const category of catalog) {
     if (!isExpectedCategoryId(category.id)) {
       return { kind: "invalid", error: { kind: "unknown-category-id", categoryId: category.id } }
     }
+    seenCategoryIds.add(category.id)
   }
 
   if (
@@ -89,7 +96,7 @@ function validateCategoryOrder(
 }
 
 function validateCategory(
-  category: CatalogValidationCategory,
+  category: ExpectedCatalogCategory,
   levelKeyOwners: Map<string, string>,
 ): CatalogValidationResult {
   if (
@@ -106,17 +113,10 @@ function validateCategory(
 }
 
 function validateLevels(
-  category: CatalogValidationCategory,
+  category: ExpectedCatalogCategory,
   levelKeyOwners: Map<string, string>,
 ): CatalogValidationResult {
   const seenLevels = new Set<number>()
-  const expectedLevelCount = getExpectedLevelCount(category.id)
-  if (expectedLevelCount === undefined) {
-    return {
-      kind: "invalid",
-      error: { kind: "unknown-category-id", categoryId: category.id },
-    }
-  }
 
   for (const level of category.levels) {
     if (seenLevels.has(level.level)) {
@@ -133,7 +133,7 @@ function validateLevels(
     }
   }
 
-  for (let level = 0; level < expectedLevelCount; level += 1) {
+  for (let level = 0; level < EXPECTED_LEVEL_COUNTS[category.id]; level += 1) {
     if (!seenLevels.has(level)) {
       return { kind: "invalid", error: { kind: "missing-level", categoryId: category.id, level } }
     }
@@ -200,6 +200,12 @@ function validateLevelStructure(
 function validateGate(categoryId: string, level: CatalogValidationLevel): CatalogValidationResult {
   switch (level.metricRule.kind) {
     case "reps":
+      if (level.metricRule.sets !== 3) {
+        return {
+          kind: "invalid",
+          error: { kind: "invalid-set-count", categoryId, level: level.level },
+        }
+      }
       if (level.metricRule.rir === undefined) {
         return {
           kind: "invalid",
@@ -209,9 +215,20 @@ function validateGate(categoryId: string, level: CatalogValidationLevel): Catalo
       return { kind: "valid" }
     case "duration":
     case "tempoReps":
+      if (level.metricRule.sets !== 3) {
+        return {
+          kind: "invalid",
+          error: { kind: "invalid-set-count", categoryId, level: level.level },
+        }
+      }
       return { kind: "valid" }
     case "terminal":
       return validateTerminalLevel(categoryId, level)
+    case "unknownMetricRule":
+      return {
+        kind: "invalid",
+        error: { kind: "unknown-metric-rule", categoryId, level: level.level },
+      }
     default:
       return assertNever(level.metricRule)
   }
@@ -240,25 +257,25 @@ function validateTerminalLevel(
   return { kind: "valid" }
 }
 
-function isExpectedCategoryId(id: string): id is CategoryId {
+function isExpectedCategoryId(id: string): id is ExpectedCategoryId {
   return CATEGORY_IDS.some((categoryId) => categoryId === id)
 }
 
-function getExpectedLevelCount(categoryId: string): number | undefined {
-  switch (categoryId) {
-    case "push":
-      return EXPECTED_LEVEL_COUNTS.push
-    case "pull":
-      return EXPECTED_LEVEL_COUNTS.pull
-    case "squat":
-      return EXPECTED_LEVEL_COUNTS.squat
-    case "hinge":
-      return EXPECTED_LEVEL_COUNTS.hinge
-    case "verticalPush":
-      return EXPECTED_LEVEL_COUNTS.verticalPush
-    case "core":
-      return EXPECTED_LEVEL_COUNTS.core
-    default:
-      return undefined
-  }
+function isExpectedCatalogCategory(
+  category: CatalogValidationCategory,
+): category is ExpectedCatalogCategory {
+  return isExpectedCategoryId(category.id)
+}
+
+function hasNonTerminalFreeHspu(catalog: readonly ExpectedCatalogCategory[]): boolean {
+  return catalog.some(
+    (category) =>
+      category.id === TERMINAL_LEVEL.categoryId &&
+      category.levels.some(
+        (level) =>
+          level.level === TERMINAL_LEVEL.level &&
+          level.name === TERMINAL_LEVEL.name &&
+          level.metricRule.kind !== "terminal",
+      ),
+  )
 }

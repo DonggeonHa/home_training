@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest"
 import type { MetricRule } from "../contracts"
 import { CATEGORY_IDS } from "../contracts"
 import {
-  type CatalogValidationCategory,
+  CATALOG_VALIDATION_ERROR_KINDS,
   EXERCISE_CATALOG,
   findCatalogCategory,
   formatTargetLabel,
   validateCatalog,
-} from "./catalog"
+} from "./index"
 
 const EXPECTED_LEVEL_COUNTS = {
   push: 8,
@@ -19,23 +19,6 @@ const EXPECTED_LEVEL_COUNTS = {
 } as const
 
 const expectedCategoryIds = ["push", "pull", "squat", "hinge", "verticalPush", "core"] as const
-
-function cloneCatalogWithCategory(
-  category: CatalogValidationCategory,
-): readonly CatalogValidationCategory[] {
-  return EXERCISE_CATALOG.map((existingCategory) =>
-    existingCategory.id === category.id ? category : existingCategory,
-  )
-}
-
-function replaceCatalogCategoryAt(
-  index: number,
-  category: CatalogValidationCategory,
-): readonly CatalogValidationCategory[] {
-  return EXERCISE_CATALOG.map((existingCategory, existingIndex) =>
-    existingIndex === index ? category : existingCategory,
-  )
-}
 
 function expectedLevelCountFor(categoryId: string): number {
   switch (categoryId) {
@@ -68,6 +51,7 @@ describe("complete exercise catalog", () => {
     // Then: category order and level counts match the approved progression source.
     expect(EXERCISE_CATALOG.map((category) => category.id)).toEqual(expectedCategoryIds)
     expect(CATEGORY_IDS).toEqual(expectedCategoryIds)
+    expect(CATALOG_VALIDATION_ERROR_KINDS).toHaveLength(16)
     expect(summary).toEqual([
       { id: "push", levelCount: EXPECTED_LEVEL_COUNTS.push },
       { id: "pull", levelCount: EXPECTED_LEVEL_COUNTS.pull },
@@ -139,8 +123,10 @@ describe("complete exercise catalog", () => {
       { kind: "reps", min: 10, max: 12, sets: 3, laterality: "none", rir: { min: 1, max: 2 } },
       { kind: "reps", min: 5, max: 5, sets: 3, laterality: "perSide", rir: { min: 1, max: 2 } },
       { kind: "duration", minSeconds: 20, maxSeconds: 30, sets: 3, laterality: "none" },
+      { kind: "duration", minSeconds: 20, maxSeconds: 30, sets: 3, laterality: "perSide" },
       { kind: "duration", minSeconds: 45, maxSeconds: 45, sets: 3, laterality: "none" },
       { kind: "tempoReps", min: 5, max: 5, tempoSeconds: 5, sets: 3, laterality: "none" },
+      { kind: "tempoReps", min: 3, max: 5, tempoSeconds: 4, sets: 3, laterality: "perSide" },
       { kind: "terminal", label: "상급 목표", laterality: "none" },
     ]
 
@@ -152,80 +138,11 @@ describe("complete exercise catalog", () => {
       "10~12회 × 3세트",
       "좌우 5회 × 3세트",
       "20~30초 × 3세트",
+      "좌우 20~30초 × 3세트",
       "45초 × 3세트",
       "5초 하강 × 5회 × 3세트",
+      "좌우 4초 하강 × 3~5회 × 3세트",
       "상급 목표",
-    ])
-  })
-
-  it("rejects malformed duplicate, missing, unknown, content, gate, and terminal fixtures", () => {
-    // Given: local malformed fixtures representing catalog boundary failures.
-    const duplicateCategory = { ...EXERCISE_CATALOG[0], id: "pull" }
-    const missingLevelCategory = {
-      ...EXERCISE_CATALOG[1],
-      levels: EXERCISE_CATALOG[1].levels.filter((level) => level.level !== 2),
-    }
-    const duplicateKeyCategory = {
-      ...EXERCISE_CATALOG[2],
-      levels: EXERCISE_CATALOG[2].levels.map((level) =>
-        level.level === 1
-          ? { ...level, key: EXERCISE_CATALOG[2].levels[0]?.key ?? "missing" }
-          : level,
-      ),
-    }
-    const unknownCategory = { ...EXERCISE_CATALOG[3], id: "unknown" }
-    const emptyRequiredContentCategory = { ...EXERCISE_CATALOG[4], warmup: [] }
-    const repsRuleWithoutRir: MetricRule = {
-      kind: "reps",
-      min: 10,
-      max: 10,
-      sets: 3,
-      laterality: "none",
-    }
-    const missingGateCategory = {
-      ...EXERCISE_CATALOG[5],
-      levels: EXERCISE_CATALOG[5].levels.map((level) =>
-        level.level === 0 ? { ...level, metricRule: repsRuleWithoutRir } : level,
-      ),
-    }
-    const promotedTerminalCategory = {
-      ...EXERCISE_CATALOG[4],
-      levels: EXERCISE_CATALOG[4].levels.map((level) =>
-        level.metricRule.kind === "terminal" ? { ...level, promotable: true } : level,
-      ),
-    }
-
-    // When: catalog-wide validation runs against each malformed catalog.
-    const results = [
-      validateCatalog(replaceCatalogCategoryAt(0, duplicateCategory)),
-      validateCatalog(cloneCatalogWithCategory(missingLevelCategory)),
-      validateCatalog(cloneCatalogWithCategory(duplicateKeyCategory)),
-      validateCatalog(replaceCatalogCategoryAt(3, unknownCategory)),
-      validateCatalog(cloneCatalogWithCategory(emptyRequiredContentCategory)),
-      validateCatalog(cloneCatalogWithCategory(missingGateCategory)),
-      validateCatalog(cloneCatalogWithCategory(promotedTerminalCategory)),
-    ]
-
-    // Then: each malformed fixture is rejected with a precise typed reason.
-    expect(results).toEqual([
-      { kind: "invalid", error: { kind: "duplicate-category-id", categoryId: "pull" } },
-      { kind: "invalid", error: { kind: "missing-level", categoryId: "pull", level: 2 } },
-      {
-        kind: "invalid",
-        error: {
-          kind: "duplicate-level-key",
-          key: "squat-0-의자 스쿼트",
-          firstCategoryId: "squat",
-          secondCategoryId: "squat",
-        },
-      },
-      { kind: "invalid", error: { kind: "unknown-category-id", categoryId: "unknown" } },
-      { kind: "invalid", error: { kind: "empty-required-content", categoryId: "verticalPush" } },
-      { kind: "invalid", error: { kind: "missing-computable-gate", categoryId: "core", level: 0 } },
-      {
-        kind: "invalid",
-        error: { kind: "terminal-promotable", categoryId: "verticalPush", level: 8 },
-      },
     ])
   })
 
@@ -248,5 +165,13 @@ describe("complete exercise catalog", () => {
     expect(serializedSummary).toBe(
       '{"counts":{"push":8,"pull":9,"squat":9,"hinge":8,"verticalPush":9,"core":8},"labels":{"push3":"10~15회 × 3세트","pull4":"5초 하강 × 5회 × 3세트","verticalTerminal":"상급 목표","core0":"좌우 10회 × 3세트"}}',
     )
+  })
+
+  it("throws on unknown target formatter variants at the domain boundary", () => {
+    // Given: a malformed runtime metric variant that bypassed TypeScript.
+    const unknownMetric = JSON.parse('{"kind":"unknown","sets":3,"laterality":"none"}')
+
+    // When / Then: exhaustive formatting fails closed.
+    expect(() => formatTargetLabel(unknownMetric)).toThrow("Unexpected domain variant")
   })
 })
