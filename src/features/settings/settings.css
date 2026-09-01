@@ -1,0 +1,67 @@
+.settings-page,
+.settings-intro,
+.settings-panel,
+.restore-preview {
+  display: grid;
+}
+
+.settings-page {
+  gap: var(--space-8);
+}
+
+.settings-intro,
+.settings-panel {
+  padding: var(--space-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--space-2);
+  background: var(--surface-elevated);
+}
+
+.settings-intro,
+.settings-panel,
+.restore-preview {
+  gap: var(--space-4);
+}
+
+.settings-intro h1 {
+  font-size: 2rem;
+}
+
+.settings-intro p,
+.settings-notice {
+  color: var(--text-secondary);
+}
+
+.settings-check {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: var(--space-3);
+  font-weight: 650;
+}
+
+.settings-check input {
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+  accent-color: var(--accent-primary);
+}
+
+.restore-preview {
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--space-2);
+  background: var(--surface-secondary);
+}
+
+.settings-notice {
+  margin: 0;
+  font-weight: 650;
+}
+
+.settings-notice.error {
+  color: var(--status-error);
+}
+
+.settings-notice.restored {
+  color: var(--status-success);
+}
