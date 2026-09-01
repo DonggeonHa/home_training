@@ -81,12 +81,17 @@ const DurationMetricRuleSchema = z
 const TempoRepsMetricRuleSchema = z
   .object({
     kind: z.literal("tempoReps"),
-    reps: positiveInteger,
+    min: positiveInteger,
+    max: positiveInteger,
     tempoSeconds: positiveInteger,
     sets: z.literal(3),
     laterality: lateralitySchema,
+    rir: RirGateSchema.optional(),
   })
   .strict()
+  .refine((rule) => rule.max >= rule.min, {
+    message: "Tempo rep max must be greater than or equal to min",
+  })
 
 const TerminalMetricRuleSchema = z
   .object({

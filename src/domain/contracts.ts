@@ -43,10 +43,12 @@ export type DurationMetricRule = {
 
 export type TempoRepsMetricRule = {
   readonly kind: "tempoReps"
-  readonly reps: number
+  readonly min: number
+  readonly max: number
   readonly tempoSeconds: number
   readonly sets: 3
   readonly laterality: Laterality
+  readonly rir?: RirGate | undefined
 }
 
 export type TerminalMetricRule = {

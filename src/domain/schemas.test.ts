@@ -20,7 +20,8 @@ describe("domain boundary schemas", () => {
     })
     const tempoRule = MetricRuleSchema.safeParse({
       kind: "tempoReps",
-      reps: 5,
+      min: 5,
+      max: 5,
       tempoSeconds: 5,
       sets: 3,
       laterality: "none",
@@ -219,7 +220,8 @@ describe("domain boundary schemas", () => {
         name: "valid tempo",
         passed: MetricRuleSchema.safeParse({
           kind: "tempoReps",
-          reps: 5,
+          min: 5,
+          max: 5,
           tempoSeconds: 5,
           sets: 3,
           laterality: "none",
