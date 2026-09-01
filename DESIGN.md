@@ -19,11 +19,11 @@
 | Text/tertiary | --text-tertiary | #728179 | #82928B | Disabled text and hints |
 | Border/default | --border-default | #C9D5CB | #33433D | Controls and dividers |
 | Border/subtle | --border-subtle | #DDE6DD | #27352F | Soft separations |
-| Accent/primary | --accent-primary | #2F8A5F | #72D49D | Primary actions, focus, current level |
-| Accent/hover | --accent-hover | #256F4E | #95E4B4 | Hover and active action states |
+| Accent/primary | --accent-primary | #256F4E | #72D49D | Primary actions, focus, current level |
+| Accent/hover | --accent-hover | #1F5F42 | #95E4B4 | Hover and active action states |
 | Accent/ink | --accent-ink | #F7FFF8 | #0D1712 | Text on accent surfaces |
-| Status/success | --status-success | #2F8A5F | #72D49D | Clear, passed, saved |
-| Status/warning | --status-warning | #A56B1D | #E3B45D | Cautions and readiness prompts |
+| Status/success | --status-success | #256F4E | #72D49D | Clear, passed, saved |
+| Status/warning | --status-warning | #965D16 | #E3B45D | Cautions and readiness prompts |
 | Status/error | --status-error | #B84545 | #F08A8A | Pain, stop, destructive actions |
 | Status/info | --status-info | #316F7F | #7CC9D8 | Neutral notices |
 

@@ -1,0 +1,190 @@
+.ui-button {
+  display: inline-flex;
+  min-height: 44px;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--space-2);
+  font-weight: 650;
+  line-height: 1.2;
+  text-decoration: none;
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    color 120ms ease-out,
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+.ui-button:disabled {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.ui-button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.ui-button-primary {
+  background: var(--accent-primary);
+  color: var(--accent-ink);
+}
+
+.ui-button-primary:hover {
+  background: var(--accent-hover);
+}
+
+.ui-button-secondary,
+.ui-button-ghost {
+  border-color: var(--border-default);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.ui-button-secondary:hover,
+.ui-button-ghost:hover {
+  background: var(--surface-secondary);
+}
+
+.ui-card,
+.ui-notice {
+  padding: var(--space-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--space-2);
+  background: var(--surface-elevated);
+}
+
+.ui-card {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.ui-notice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+}
+
+.ui-notice-info {
+  color: var(--status-info);
+}
+
+.ui-notice-success {
+  color: var(--status-success);
+}
+
+.ui-notice-warning {
+  color: var(--status-warning);
+}
+
+.ui-notice-error {
+  color: var(--status-error);
+}
+
+.ui-field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ui-field label {
+  color: var(--text-primary);
+  font-weight: 650;
+}
+
+.ui-field input,
+.ui-field textarea,
+.ui-field select {
+  min-height: 44px;
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--space-2);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+}
+
+.ui-field-hint,
+.ui-field-error {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.ui-field-hint {
+  color: var(--text-secondary);
+}
+
+.ui-field-error {
+  color: var(--status-error);
+}
+
+.ui-dialog::backdrop {
+  background: color-mix(in srgb, var(--surface-primary) 76%, transparent);
+}
+
+.ui-dialog {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  z-index: 2;
+  display: grid;
+  width: min(100%, 520px);
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid var(--border-default);
+  border-radius: var(--space-2);
+  margin: 0;
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  transform: translate(-50%, -50%);
+}
+
+.ui-dialog:not([open]) {
+  display: none;
+}
+
+.ui-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.ui-dialog-close {
+  width: 44px;
+  padding: 0;
+}
+
+.ui-progress {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.ui-progress-label {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.ui-progress-track {
+  overflow: hidden;
+  block-size: var(--space-3);
+  border-radius: var(--space-2);
+  background: var(--surface-progress);
+}
+
+.ui-progress-fill {
+  display: block;
+  block-size: 100%;
+  background: var(--accent-primary);
+}
+
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: var(--space-1);
+}

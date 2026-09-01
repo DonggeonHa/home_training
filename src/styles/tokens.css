@@ -9,11 +9,11 @@
   --text-tertiary: #728179;
   --border-default: #c9d5cb;
   --border-subtle: #dde6dd;
-  --accent-primary: #2f8a5f;
-  --accent-hover: #256f4e;
+  --accent-primary: #256f4e;
+  --accent-hover: #1f5f42;
   --accent-ink: #f7fff8;
-  --status-success: #2f8a5f;
-  --status-warning: #a56b1d;
+  --status-success: #256f4e;
+  --status-warning: #965d16;
   --status-error: #b84545;
   --status-info: #316f7f;
   --space-1: 4px;
@@ -54,6 +54,46 @@
   }
 }
 
+[data-theme="light"] {
+  color-scheme: light;
+  --surface-primary: #f6f8f4;
+  --surface-secondary: #ebf0ea;
+  --surface-elevated: #ffffff;
+  --surface-progress: #dce7dc;
+  --text-primary: #15201c;
+  --text-secondary: #4c5f58;
+  --text-tertiary: #728179;
+  --border-default: #c9d5cb;
+  --border-subtle: #dde6dd;
+  --accent-primary: #256f4e;
+  --accent-hover: #1f5f42;
+  --accent-ink: #f7fff8;
+  --status-success: #256f4e;
+  --status-warning: #965d16;
+  --status-error: #b84545;
+  --status-info: #316f7f;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-primary: #101614;
+  --surface-secondary: #17211e;
+  --surface-elevated: #1d2925;
+  --surface-progress: #25342f;
+  --text-primary: #f3f7f1;
+  --text-secondary: #b7c5be;
+  --text-tertiary: #82928b;
+  --border-default: #33433d;
+  --border-subtle: #27352f;
+  --accent-primary: #72d49d;
+  --accent-hover: #95e4b4;
+  --accent-ink: #0d1712;
+  --status-success: #72d49d;
+  --status-warning: #e3b45d;
+  --status-error: #f08a8a;
+  --status-info: #7cc9d8;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -68,6 +108,18 @@ body {
   margin: 0;
 }
 
+.sr-only {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
 button,
 input,
 textarea,
@@ -80,99 +132,31 @@ select {
   top: var(--space-4);
   left: var(--space-4);
   z-index: 1;
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--space-2);
   background: var(--accent-primary);
   color: var(--accent-ink);
+  opacity: 0;
+  pointer-events: none;
   text-decoration: none;
-  transform: translateY(calc(-100% - var(--space-8)));
-  transition: transform 120ms ease-out;
+  transition: opacity 120ms ease-out;
 }
 
+.skip-link:focus,
 .skip-link:focus-visible {
   outline: 2px solid var(--accent-hover);
   outline-offset: var(--space-1);
-  transform: translateY(0);
-}
-
-.app-shell {
-  display: grid;
-  min-height: 100dvh;
-  grid-template-rows: auto 1fr;
-}
-
-.app-header,
-.app-main {
-  width: min(100% - var(--space-8), 1184px);
-  margin-inline: auto;
-}
-
-.app-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding-block: var(--space-8) var(--space-6);
-}
-
-.brand-mark {
-  display: grid;
-  width: var(--space-12);
-  height: var(--space-12);
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--space-2);
-  background: var(--surface-elevated);
-  color: var(--accent-primary);
-}
-
-.eyebrow,
-.panel-label {
-  margin: 0 0 var(--space-1);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.4;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 h1,
 h2,
 p {
   margin-block: 0;
-}
-
-h1 {
-  font-size: clamp(2rem, 10vw, 2.5rem);
-  font-weight: 750;
-  line-height: 1.15;
-}
-
-.app-main {
-  display: grid;
-  align-items: center;
-  padding-block: var(--space-6) var(--space-16);
-}
-
-.foundation-panel {
-  max-width: 720px;
-  padding: var(--space-6);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--space-2);
-  background: var(--surface-elevated);
-}
-
-.foundation-panel h2 {
-  margin-block-end: var(--space-4);
-  font-size: clamp(1.5rem, 5vw, 1.625rem);
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.foundation-panel p:last-child {
-  max-width: 58ch;
-  color: var(--text-secondary);
-  font-size: 1rem;
-  line-height: 1.6;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -184,4 +168,13 @@ h1 {
     animation-duration: 1ms;
     animation-iteration-count: 1;
   }
+}
+
+.motion-reduce *,
+.motion-reduce *::before,
+.motion-reduce *::after {
+  scroll-behavior: auto;
+  transition-duration: 1ms;
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
 }

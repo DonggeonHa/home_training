@@ -20,7 +20,7 @@ if (rootElement === null) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <HashRouter>
+    <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <App />
     </HashRouter>
   </StrictMode>,
