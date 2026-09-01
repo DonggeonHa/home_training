@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { assertNever } from "./assert-never"
 import {
   type AppState,
   CATEGORY_IDS,
@@ -26,8 +27,8 @@ const lateralitySchema = z.union([z.literal("none"), z.literal("perSide")])
 
 const RirGateSchema = z
   .object({
-    min: z.number().int().min(0),
-    max: z.number().int().min(0),
+    min: z.number().int().min(0).max(5),
+    max: z.number().int().min(0).max(5),
   })
   .strict()
   .refine((gate) => gate.max >= gate.min, {
@@ -107,7 +108,7 @@ export const SetRecordSchema: z.ZodType<SetRecord> = z.discriminatedUnion("kind"
     .object({
       kind: z.literal("single"),
       value: integerCount,
-      rir: z.number().int().min(0).optional(),
+      rir: z.number().int().min(0).max(5).optional(),
       loadKg: z.number().nonnegative().optional(),
       quality: SetQualitySchema,
     })
@@ -117,7 +118,7 @@ export const SetRecordSchema: z.ZodType<SetRecord> = z.discriminatedUnion("kind"
       kind: z.literal("perSide"),
       left: integerCount,
       right: integerCount,
-      rir: z.number().int().min(0).optional(),
+      rir: z.number().int().min(0).max(5).optional(),
       loadKg: z.number().nonnegative().optional(),
       quality: SetQualitySchema,
     })
@@ -138,7 +139,7 @@ const CategoryProgressSchema = z
   })
   .strict()
 
-const SessionEntrySchema = z
+export const SessionEntrySchema = z
   .object({
     categoryId: CategoryIdSchema,
     level: z.number().int().nonnegative(),
@@ -147,6 +148,32 @@ const SessionEntrySchema = z
     sets: z.array(SetRecordSchema).readonly(),
   })
   .strict()
+  .superRefine((entry, context) => {
+    for (const [index, set] of entry.sets.entries()) {
+      switch (entry.metricRule.laterality) {
+        case "none":
+          if (set.kind !== "single") {
+            context.addIssue({
+              code: "custom",
+              path: ["sets", index, "kind"],
+              message: "Metric laterality none requires single set records",
+            })
+          }
+          break
+        case "perSide":
+          if (set.kind !== "perSide") {
+            context.addIssue({
+              code: "custom",
+              path: ["sets", index, "kind"],
+              message: "Metric laterality perSide requires perSide set records",
+            })
+          }
+          break
+        default:
+          assertNever(entry.metricRule.laterality)
+      }
+    }
+  })
 
 const CompletedSessionSchema = z
   .object({

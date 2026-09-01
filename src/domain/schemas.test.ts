@@ -79,6 +79,41 @@ describe("domain boundary schemas", () => {
     ).toBe(false)
   })
 
+  it("rejects RIR gate values outside integer zero through five", () => {
+    expect(
+      MetricRuleSchema.safeParse({
+        kind: "reps",
+        min: 10,
+        max: 15,
+        sets: 3,
+        laterality: "none",
+        rir: { min: -1, max: 2 },
+      }).success,
+    ).toBe(false)
+
+    expect(
+      MetricRuleSchema.safeParse({
+        kind: "reps",
+        min: 10,
+        max: 15,
+        sets: 3,
+        laterality: "none",
+        rir: { min: 1, max: 6 },
+      }).success,
+    ).toBe(false)
+
+    expect(
+      MetricRuleSchema.safeParse({
+        kind: "reps",
+        min: 10,
+        max: 15,
+        sets: 3,
+        laterality: "none",
+        rir: { min: 1.5, max: 2 },
+      }).success,
+    ).toBe(false)
+  })
+
   it("parses set records by matching metric laterality", () => {
     expect(
       SetRecordSchema.safeParse({
@@ -105,6 +140,53 @@ describe("domain boundary schemas", () => {
         kind: "single",
         left: 8,
         right: 8,
+        quality: { pain: false, form: "good", rom: "full" },
+      }).success,
+    ).toBe(false)
+  })
+
+  it("keeps normal logged RIR values bounded to integer zero through five", () => {
+    expect(
+      SetRecordSchema.safeParse({
+        kind: "single",
+        value: 12,
+        rir: 0,
+        quality: { pain: false, form: "good", rom: "full" },
+      }).success,
+    ).toBe(true)
+
+    expect(
+      SetRecordSchema.safeParse({
+        kind: "single",
+        value: 12,
+        rir: 5,
+        quality: { pain: false, form: "good", rom: "full" },
+      }).success,
+    ).toBe(true)
+
+    expect(
+      SetRecordSchema.safeParse({
+        kind: "single",
+        value: 12,
+        rir: -1,
+        quality: { pain: false, form: "good", rom: "full" },
+      }).success,
+    ).toBe(false)
+
+    expect(
+      SetRecordSchema.safeParse({
+        kind: "single",
+        value: 12,
+        rir: 6,
+        quality: { pain: false, form: "good", rom: "full" },
+      }).success,
+    ).toBe(false)
+
+    expect(
+      SetRecordSchema.safeParse({
+        kind: "single",
+        value: 12,
+        rir: 2.5,
         quality: { pain: false, form: "good", rom: "full" },
       }).success,
     ).toBe(false)
