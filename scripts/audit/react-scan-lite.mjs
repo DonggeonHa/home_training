@@ -1,19 +1,18 @@
-import { spawn, spawnSync } from "node:child_process"
+import { spawnSync } from "node:child_process"
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { createRequire } from "node:module"
 import { join } from "node:path"
 import { chromium } from "playwright"
+import { withPreviewServer } from "./preview-server.mjs"
 
 const evidenceRoot = join(".omo", "evidence", "home-training", "task-12")
 const bundlePath = join(evidenceRoot, "react-scan-lite.js")
 const reportPath = join(evidenceRoot, "react-scan-lite-report.json")
-const previewUrl = "http://127.0.0.1:4173"
-const pnpmExecutable = readPnpmExecutable()
+const require = createRequire(import.meta.url)
 
 mkdirSync(evidenceRoot, { recursive: true })
 run(process.execPath, [
-  pnpmExecutable,
-  "exec",
-  "esbuild",
+  require.resolve("esbuild/bin/esbuild"),
   "react-scan/lite",
   "--bundle",
   "--format=iife",
@@ -22,27 +21,8 @@ run(process.execPath, [
   `--outfile=${bundlePath}`,
 ])
 
-const preview = spawn(
-  process.execPath,
-  [
-    pnpmExecutable,
-    "exec",
-    "vite",
-    "preview",
-    "--host",
-    "127.0.0.1",
-    "--port",
-    "4173",
-    "--strictPort",
-  ],
-  {
-    stdio: "ignore",
-  },
-)
-
-try {
-  await waitForPreview()
-  const report = await runReactScanAudit()
+await withPreviewServer(async (preview) => {
+  const report = await runReactScanAudit(preview.url)
   writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8")
 
   if (!report.instrumented || report.commitEventCount === 0 || report.unnecessaryEventCount > 0) {
@@ -53,9 +33,7 @@ try {
   console.log(
     `react-scan/lite gate passed: ${report.commitEventCount} commits, 0 unnecessary; report ${reportPath}`,
   )
-} finally {
-  await stopProcess(preview)
-}
+})
 
 function run(command, args) {
   const result = spawnSync(command, args, {
@@ -67,36 +45,13 @@ function run(command, args) {
   }
 }
 
-function readPnpmExecutable() {
-  if (process.env.npm_execpath === undefined) {
-    throw new Error("npm_execpath was not provided by pnpm")
-  }
-  return process.env.npm_execpath
-}
-
-async function waitForPreview() {
-  const deadline = Date.now() + 30_000
-  while (Date.now() < deadline) {
-    try {
-      const response = await fetch(previewUrl)
-      if (response.ok) {
-        return
-      }
-    } catch (error) {
-      if (!(error instanceof Error)) {
-        throw error
-      }
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250))
-  }
-  throw new Error("Timed out waiting for production preview")
-}
-
-async function runReactScanAudit() {
+async function runReactScanAudit(previewUrl) {
   const bundleSource = readFileSync(bundlePath, "utf8")
   const browser = await chromium.launch({ channel: "chrome" })
-  const context = await browser.newContext()
-  await context.addInitScript(`${bundleSource}
+  try {
+    const context = await browser.newContext()
+    try {
+      await context.addInitScript(`${bundleSource}
 ;(() => {
   window.__homeTrainingReactScanEvents = [];
   window.__homeTrainingReactScanInstrumented = false;
@@ -112,44 +67,40 @@ async function runReactScanAudit() {
   });
   window.__homeTrainingReactScanInstrumented = true;
 })();`)
-  const page = await context.newPage()
-  await page.goto(`${previewUrl}/#/`)
-  await page.getByRole("link", { name: "운동" }).click()
-  await page.getByRole("button", { name: "안전 원칙" }).click()
-  await page.getByRole("button", { exact: true, name: "닫기" }).click()
-  await page.getByRole("link", { name: "기록" }).click()
-  await page.getByRole("link", { name: "설정" }).click()
-  await page.waitForTimeout(250)
-  const report = await page.evaluate(() => {
-    const events = window.__homeTrainingReactScanEvents ?? []
-    return {
-      commitEventCount: events.length,
-      instrumented: window.__homeTrainingReactScanInstrumented === true,
-      unnecessaryEventCount: events.filter(hasUnnecessaryRender).length,
-    }
+      const page = await context.newPage()
+      await page.goto(`${previewUrl}/#/`)
+      await page.getByRole("link", { name: "운동" }).click()
+      await page.getByRole("button", { name: "안전 원칙" }).click()
+      await page.getByRole("button", { exact: true, name: "닫기" }).click()
+      await page.getByRole("link", { name: "기록" }).click()
+      await page.getByRole("link", { name: "설정" }).click()
+      await waitForCommitEvents(page)
+      return await page.evaluate(() => {
+        const events = window.__homeTrainingReactScanEvents ?? []
+        return {
+          commitEventCount: events.length,
+          instrumented: window.__homeTrainingReactScanInstrumented === true,
+          unnecessaryEventCount: events.filter(hasUnnecessaryRender).length,
+        }
 
-    function hasUnnecessaryRender(event) {
-      return JSON.stringify(event).includes('"unnecessary"')
+        function hasUnnecessaryRender(event) {
+          return JSON.stringify(event).includes('"unnecessary"')
+        }
+      })
+    } finally {
+      await context.close()
     }
-  })
-  await browser.close()
-  return report
+  } finally {
+    await browser.close()
+  }
 }
 
-async function stopProcess(processToStop) {
-  if (processToStop.exitCode !== null) {
-    return
-  }
-
-  const stopped = new Promise((resolve) => {
-    processToStop.once("exit", resolve)
-  })
-  if (process.platform === "win32" && processToStop.pid !== undefined) {
-    spawnSync("taskkill", ["/pid", String(processToStop.pid), "/t", "/f"], {
-      stdio: "ignore",
-    })
-  } else {
-    processToStop.kill("SIGTERM")
-  }
-  await Promise.race([stopped, new Promise((resolve) => setTimeout(resolve, 5_000))])
+async function waitForCommitEvents(page) {
+  await page.waitForFunction(
+    () => (window.__homeTrainingReactScanEvents?.length ?? 0) > 0,
+    undefined,
+    {
+      timeout: 5_000,
+    },
+  )
 }

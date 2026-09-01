@@ -5,7 +5,7 @@ export default defineConfig({
   testIgnore: ["features/dashboard/todo11-visual-qa.spec.ts"],
   testMatch: "**/*.spec.ts",
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: "http://127.0.0.1:4190",
     trace: "on-first-retry",
   },
   projects: [
@@ -15,8 +15,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm exec vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    command: "pnpm exec vite preview --host 127.0.0.1 --port 4190 --strictPort",
     reuseExistingServer: false,
-    url: "http://127.0.0.1:4173",
+    url: "http://127.0.0.1:4190",
   },
 })
