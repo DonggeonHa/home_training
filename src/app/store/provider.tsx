@@ -11,7 +11,11 @@ import {
 } from "react"
 import { saveStoredState } from "../../storage/persistence"
 import { BrowserLocalStoragePort, type StoragePort } from "../../storage/ports"
-import { storeReducedMotionPreference, storeThemePreference } from "../theme"
+import {
+  getBrowserPreferenceStorage,
+  storeReducedMotionPreference,
+  storeThemePreference,
+} from "../theme"
 import { createAppStoreState, reduceAppStore, toStoredState } from "./reducer"
 import { currentCategoryKey } from "./selectors"
 import type {
@@ -88,17 +92,19 @@ export function AppStoreProvider({ children, storage }: AppStoreProviderProps) {
   }, [state])
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    const preferenceStorage = getBrowserPreferenceStorage()
+    if (preferenceStorage === null) {
       return
     }
-    storeThemePreference(window.localStorage, state.display.themePreference)
+    storeThemePreference(preferenceStorage, state.display.themePreference)
   }, [state.display.themePreference])
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    const preferenceStorage = getBrowserPreferenceStorage()
+    if (preferenceStorage === null) {
       return
     }
-    storeReducedMotionPreference(window.localStorage, state.display.reducedMotionPreference)
+    storeReducedMotionPreference(preferenceStorage, state.display.reducedMotionPreference)
   }, [state.display.reducedMotionPreference])
 
   useEffect(() => {

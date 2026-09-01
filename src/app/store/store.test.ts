@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest"
+import { afterEach, describe, expect, it } from "vitest"
 import { SessionIdSchema } from "../../domain/schemas"
 import { APP_STORAGE_KEY } from "../../storage"
 import { createDefaultStoredState } from "../../storage/defaults"
@@ -13,8 +13,15 @@ import {
 } from "./index"
 
 const now = "2026-09-02T00:00:00.000Z"
+const originalLocalStorageDescriptor = Object.getOwnPropertyDescriptor(window, "localStorage")
 
 describe("app store hydration and safety reducer", () => {
+  afterEach(() => {
+    if (originalLocalStorageDescriptor !== undefined) {
+      Object.defineProperty(window, "localStorage", originalLocalStorageDescriptor)
+    }
+  })
+
   it("recovers malformed persisted state through the parsed storage adapter", () => {
     // Given: storage contains bytes that are not parseable app state.
     const storage = new MemoryStoragePort()
@@ -26,6 +33,24 @@ describe("app store hydration and safety reducer", () => {
     // Then: the parsed adapter supplies defaults and a typed recovery notice.
     expect(state.stored).toEqual(createDefaultStoredState())
     expect(state.loadNotice).toMatchObject({ kind: "recovered", reason: "malformedJson" })
+  })
+
+  it("hydrates display defaults when browser localStorage is unavailable", () => {
+    // Given: the browser localStorage getter is blocked while app storage is injected.
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      get() {
+        throw new DOMException("denied", "SecurityError")
+      },
+    })
+
+    // When: the app store hydrates.
+    const state = createAppStoreState({ storage: new MemoryStoragePort() })
+
+    // Then: display preferences use safe defaults and stored app state still hydrates.
+    expect(state.display.themePreference).toBe("system")
+    expect(state.display.reducedMotionPreference).toBe("system")
+    expect(state.stored).toEqual(createDefaultStoredState())
   })
 
   it("blocks red-flag safety answers without storing individual health answers", () => {

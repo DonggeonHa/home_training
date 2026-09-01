@@ -29,7 +29,7 @@ export function resolveThemePreference(
 }
 
 export function loadThemePreference(storage: Pick<Storage, "getItem">): ThemePreference {
-  const stored = storage.getItem(THEME_STORAGE_KEY)
+  const stored = readPreference(storage, THEME_STORAGE_KEY)
 
   return stored !== null && isThemePreference(stored) ? stored : "system"
 }
@@ -38,13 +38,13 @@ export function storeThemePreference(
   storage: Pick<Storage, "setItem">,
   preference: ThemePreference,
 ): void {
-  storage.setItem(THEME_STORAGE_KEY, preference)
+  writePreference(storage, THEME_STORAGE_KEY, preference)
 }
 
 export function loadReducedMotionPreference(
   storage: Pick<Storage, "getItem">,
 ): ReducedMotionPreference {
-  const stored = storage.getItem(REDUCED_MOTION_STORAGE_KEY)
+  const stored = readPreference(storage, REDUCED_MOTION_STORAGE_KEY)
 
   return stored !== null && isReducedMotionPreference(stored) ? stored : "system"
 }
@@ -53,7 +53,22 @@ export function storeReducedMotionPreference(
   storage: Pick<Storage, "setItem">,
   preference: ReducedMotionPreference,
 ): void {
-  storage.setItem(REDUCED_MOTION_STORAGE_KEY, preference)
+  writePreference(storage, REDUCED_MOTION_STORAGE_KEY, preference)
+}
+
+export function getBrowserPreferenceStorage(): Storage | null {
+  if (typeof window === "undefined") {
+    return null
+  }
+
+  try {
+    return window.localStorage
+  } catch (error) {
+    if (isExpectedPreferenceStorageError(error)) {
+      return null
+    }
+    throw error
+  }
 }
 
 export function resolveMotionClass(prefersReducedMotion: boolean): MotionClass {
@@ -65,4 +80,29 @@ export function resolveReducedMotionPreference(
   prefersReducedMotion: boolean,
 ): boolean {
   return preference === "reduce" || prefersReducedMotion
+}
+
+function readPreference(storage: Pick<Storage, "getItem">, key: string): string | null {
+  try {
+    return storage.getItem(key)
+  } catch (error) {
+    if (isExpectedPreferenceStorageError(error)) {
+      return null
+    }
+    throw error
+  }
+}
+
+function writePreference(storage: Pick<Storage, "setItem">, key: string, value: string): void {
+  try {
+    storage.setItem(key, value)
+  } catch (error) {
+    if (!isExpectedPreferenceStorageError(error)) {
+      throw error
+    }
+  }
+}
+
+function isExpectedPreferenceStorageError(error: unknown): error is Error {
+  return error instanceof DOMException || error instanceof Error
 }

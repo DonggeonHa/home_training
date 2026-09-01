@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterEach, describe, expect, it, vi } from "vitest"
 import { CategoryIdSchema, SessionIdSchema } from "../domain/schemas"
 import { createDefaultStoredState } from "./defaults"
 import { APP_STORAGE_KEY, loadStoredState, type StoragePort, saveStoredState } from "./persistence"
@@ -21,20 +21,28 @@ class MemoryStoragePort implements StoragePort {
 }
 
 class ThrowingStoragePort implements StoragePort {
-  constructor(private readonly error: Error) {}
+  constructor(
+    private readonly readError: Error | null,
+    private readonly writeError: Error | null,
+  ) {}
 
   getItem(_key: string): string | null {
+    if (this.readError !== null) {
+      throw this.readError
+    }
     return null
   }
 
   setItem(_key: string, _value: string): void {
-    throw this.error
+    if (this.writeError !== null) {
+      throw this.writeError
+    }
   }
 }
 
 class UnknownThrowingStoragePort implements StoragePort {
   getItem(_key: string): string | null {
-    return null
+    throw { kind: "unexpected" }
   }
 
   setItem(_key: string, _value: string): void {
@@ -43,6 +51,10 @@ class UnknownThrowingStoragePort implements StoragePort {
 }
 
 describe("versioned persistence", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it("loads a default state when storage is empty", () => {
     // Given: an empty storage adapter.
     const storage = new MemoryStoragePort()
@@ -86,6 +98,27 @@ describe("versioned persistence", () => {
     expect(result.state).toEqual(createDefaultStoredState())
     expect(result.notice).toMatchObject({ kind: "recovered", reason: "schemaMismatch" })
     expect(result.rawSnapshot).toBe(JSON.stringify({ schemaVersion: 1 }))
+  })
+
+  it("recovers when storage cannot be read", () => {
+    // Given: browser storage rejects reads before bytes are available.
+    const securityStorage = new ThrowingStoragePort(
+      new DOMException("denied", "SecurityError"),
+      null,
+    )
+    const unavailableStorage = new ThrowingStoragePort(new Error("storage unavailable"), null)
+
+    // When: the app hydrates local persistence.
+    const securityResult = loadStoredState({ storage: securityStorage })
+    const unavailableResult = loadStoredState({ storage: unavailableStorage })
+
+    // Then: hydration falls back to defaults with a storage-unavailable notice.
+    expect(securityResult.state).toEqual(createDefaultStoredState())
+    expect(securityResult.notice).toEqual({ kind: "recovered", reason: "storageUnavailable" })
+    expect(securityResult.rawSnapshot).toBeUndefined()
+    expect(unavailableResult.state).toEqual(createDefaultStoredState())
+    expect(unavailableResult.notice).toEqual({ kind: "recovered", reason: "storageUnavailable" })
+    expect(unavailableResult.rawSnapshot).toBeUndefined()
   })
 
   it("migrates the minimal legacy V0 levels and sessions shape", () => {
@@ -200,7 +233,7 @@ describe("versioned persistence", () => {
     // Given: storage adapters that reject writes with other expected error types.
     const domStorage = new MemoryStoragePort()
     domStorage.writeError = new DOMException("unknown", "UnknownError")
-    const errorStorage = new ThrowingStoragePort(new Error("storage unavailable"))
+    const errorStorage = new ThrowingStoragePort(null, new Error("storage unavailable"))
 
     // When: the app attempts to persist state.
     const domResult = saveStoredState({ storage: domStorage, state: createDefaultStoredState() })
@@ -214,20 +247,36 @@ describe("versioned persistence", () => {
     expect(errorResult).toEqual({ kind: "failed", reason: "unknownStorageError" })
   })
 
-  it("rethrows unexpected storage and parser failures", () => {
+  it("rethrows unexpected storage failures and recovers parser failures", () => {
     // Given: non-Error storage failures and an unexpected JSON parser failure.
     const throwingStorage = new UnknownThrowingStoragePort()
     const storage = new MemoryStoragePort()
     storage.values.set(APP_STORAGE_KEY, "{}")
-    const parseSpy = vi.spyOn(JSON, "parse").mockImplementation(() => {
+    vi.spyOn(JSON, "parse").mockImplementation(() => {
       throw new TypeError("parser unavailable")
     })
 
     // When / Then: unknown failures are not swallowed as recovery notices.
+    expect(() => loadStoredState({ storage: throwingStorage })).toThrow()
     expect(() =>
       saveStoredState({ storage: throwingStorage, state: createDefaultStoredState() }),
     ).toThrow()
-    expect(() => loadStoredState({ storage })).toThrow(TypeError)
-    parseSpy.mockRestore()
+    const result = loadStoredState({ storage })
+    expect(result.state).toEqual(createDefaultStoredState())
+    expect(result.notice).toEqual({ kind: "recovered", reason: "malformedJson" })
+    expect(result.rawSnapshot).toBe("{}")
+  })
+
+  it("returns a typed validation failure when saving malformed state", () => {
+    // Given: a malformed state payload crosses the persistence boundary.
+    const storage = new MemoryStoragePort()
+    const malformedState = JSON.parse('{"schemaVersion":1,"nextRoutine":"A"}')
+
+    // When: the app attempts to save it.
+    const result = saveStoredState({ storage, state: malformedState })
+
+    // Then: schema validation is reported as a typed failure and no data is written.
+    expect(result).toEqual({ kind: "failed", reason: "validationFailed" })
+    expect(storage.values.has(APP_STORAGE_KEY)).toBe(false)
   })
 })

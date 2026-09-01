@@ -2,7 +2,12 @@ import { assertNever } from "../../domain/assert-never"
 import { loadStoredState } from "../../storage/persistence"
 import type { StoragePort } from "../../storage/ports"
 import type { StoredState } from "../../storage/schemas"
-import { loadReducedMotionPreference, loadThemePreference, resolveThemePreference } from "../theme"
+import {
+  getBrowserPreferenceStorage,
+  loadReducedMotionPreference,
+  loadThemePreference,
+  resolveThemePreference,
+} from "../theme"
 import { reduceSafetyAnswers, startAssessment, submitAssessmentSet } from "./assessment-reducer"
 import type { AppStoreAction, AppStoreState } from "./types"
 import { applyActiveSessionChange, applyWorkoutCompletion } from "./workout-reducer"
@@ -15,10 +20,11 @@ export function createAppStoreState(input: CreateAppStoreInput): AppStoreState {
   const result = loadStoredState({ storage: input.storage })
   const prefersDark = readMediaPreference("(prefers-color-scheme: dark)")
   const prefersReducedMotion = readMediaPreference("(prefers-reduced-motion: reduce)")
+  const preferenceStorage = getBrowserPreferenceStorage()
   const themePreference =
-    typeof window === "undefined" ? "system" : loadThemePreference(window.localStorage)
+    preferenceStorage === null ? "system" : loadThemePreference(preferenceStorage)
   const reducedMotionPreference =
-    typeof window === "undefined" ? "system" : loadReducedMotionPreference(window.localStorage)
+    preferenceStorage === null ? "system" : loadReducedMotionPreference(preferenceStorage)
 
   return {
     display: {

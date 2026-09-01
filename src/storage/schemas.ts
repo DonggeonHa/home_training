@@ -204,6 +204,7 @@ export type StorageRecoveryReason =
   | "malformedJson"
   | "futureVersion"
   | "schemaMismatch"
+  | "storageUnavailable"
   | "unknownStorageError"
 
 export type StorageLoadNotice =
@@ -216,7 +217,11 @@ export type StorageLoadNotice =
       readonly fromVersion: 0
     }
 
-export type StorageSaveFailureReason = "quotaExceeded" | "securityBlocked" | "unknownStorageError"
+export type StorageSaveFailureReason =
+  | "quotaExceeded"
+  | "securityBlocked"
+  | "unknownStorageError"
+  | "validationFailed"
 
 export type StorageSaveResult =
   | {

@@ -1,3 +1,4 @@
+import { ZodError } from "zod"
 import { createDefaultStoredState } from "./defaults"
 import { migrateLegacyV0 } from "./migration"
 import type { StoragePort } from "./ports"
@@ -32,7 +33,12 @@ export type LoadStoredStateResult = {
 }
 
 export function loadStoredState(input: LoadStoredStateInput): LoadStoredStateResult {
-  const rawSnapshot = input.storage.getItem(APP_STORAGE_KEY)
+  const rawSnapshotResult = readSnapshot(input.storage)
+  if (!rawSnapshotResult.success) {
+    return recoverWithoutSnapshot(rawSnapshotResult.reason)
+  }
+
+  const rawSnapshot = rawSnapshotResult.value
   if (rawSnapshot === null) {
     return { state: createDefaultStoredState() }
   }
@@ -60,16 +66,43 @@ export function loadStoredState(input: LoadStoredStateInput): LoadStoredStateRes
 }
 
 export function saveStoredState(input: SaveStoredStateInput): StorageSaveResult {
-  const parsedState = StoredStateSchema.parse(input.state)
   try {
+    const parsedState = StoredStateSchema.parse(input.state)
     input.storage.setItem(APP_STORAGE_KEY, JSON.stringify(parsedState))
     return { kind: "saved" }
   } catch (error) {
+    if (error instanceof ZodError) {
+      return { kind: "failed", reason: "validationFailed" }
+    }
     if (error instanceof DOMException) {
       return { kind: "failed", reason: classifyDomException(error) }
     }
     if (error instanceof Error) {
       return { kind: "failed", reason: "unknownStorageError" }
+    }
+    throw error
+  }
+}
+
+type ReadSnapshotResult =
+  | {
+      readonly success: true
+      readonly value: string | null
+    }
+  | {
+      readonly success: false
+      readonly reason: "storageUnavailable"
+    }
+
+function readSnapshot(storage: StoragePort): ReadSnapshotResult {
+  try {
+    return { success: true, value: storage.getItem(APP_STORAGE_KEY) }
+  } catch (error) {
+    if (error instanceof DOMException) {
+      return { success: false, reason: "storageUnavailable" }
+    }
+    if (error instanceof Error) {
+      return { success: false, reason: "storageUnavailable" }
     }
     throw error
   }
@@ -87,11 +120,8 @@ type JsonParseResult =
 function parseJson(rawSnapshot: string): JsonParseResult {
   try {
     return { success: true, value: JSON.parse(rawSnapshot) }
-  } catch (error) {
-    if (error instanceof SyntaxError) {
-      return { success: false }
-    }
-    throw error
+  } catch {
+    return { success: false }
   }
 }
 
@@ -103,6 +133,13 @@ function recover(
     state: createDefaultStoredState(),
     notice: createRecoveredNotice(reason),
     rawSnapshot,
+  }
+}
+
+function recoverWithoutSnapshot(reason: "storageUnavailable") {
+  return {
+    state: createDefaultStoredState(),
+    notice: createRecoveredNotice(reason),
   }
 }
 
