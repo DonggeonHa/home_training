@@ -1,0 +1,9 @@
+.omo/
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.react-doctor-report.json
+*.local
+*.log

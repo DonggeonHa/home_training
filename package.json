@@ -1,0 +1,42 @@
+{
+  "name": "home-training-levelup",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "preview": "vite preview",
+    "lint": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "react-doctor": "react-doctor"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-grab": "latest",
+    "react-router-dom": "^6.30.6",
+    "react-scan": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "latest",
+    "@playwright/test": "latest",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "latest",
+    "@testing-library/user-event": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^26.1.0",
+    "playwright": "latest",
+    "react-doctor": "latest",
+    "typescript": "^5.9.3",
+    "vite": "^4.5.14",
+    "vitest": "^0.34.6"
+  },
+  "packageManager": "pnpm@11.19.0"
+}
