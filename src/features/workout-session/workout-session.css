@@ -130,6 +130,13 @@
 }
 
 .workout-dialog {
+  display: none;
+  pointer-events: none;
+}
+
+.workout-dialog[open] {
+  display: grid;
+  pointer-events: auto;
   position: fixed;
   z-index: 3;
   right: var(--space-4);

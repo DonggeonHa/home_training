@@ -80,6 +80,39 @@ test.describe("production route smoke", () => {
     })
   })
 
+  test("keeps the closed workout abandon dialog from intercepting mobile actions", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 812, width: 375 })
+    await seedCompletedState(page, createCompletedOnboardingState(), "dark")
+    await page.goto("/#/workout")
+
+    const currentHeading = page.getByRole("heading", { level: 1, name: /Routine A ·/ })
+    const headingBeforeAdvance = await currentHeading.textContent()
+    await expect(page.locator(".workout-dialog")).not.toHaveAttribute("open", "")
+    await expect(page.locator(".workout-dialog")).toHaveCSS("display", "none")
+    await expect(page.locator(".workout-dialog")).toHaveCSS("pointer-events", "none")
+
+    const nextCategoryButton = page.getByRole("button", { name: "다음 카테고리" })
+    const hitTest = await nextCategoryButton.evaluate((button) => {
+      const rect = button.getBoundingClientRect()
+      const hitElement = document.elementFromPoint(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+      )
+
+      return hitElement === button || button.contains(hitElement)
+    })
+    expect(hitTest).toBe(true)
+
+    await nextCategoryButton.click()
+    await expect.poll(async () => currentHeading.textContent()).not.toBe(headingBeforeAdvance)
+    await page.screenshot({
+      fullPage: true,
+      path: `${evidenceDirectory}/workout-closed-dialog-mobile.png`,
+    })
+  })
+
   test("applies settings theme and restores a backup in production smoke", async ({ page }) => {
     const restoredState = {
       ...createCompletedOnboardingState(),
