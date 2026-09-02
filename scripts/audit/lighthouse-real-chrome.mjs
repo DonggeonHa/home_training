@@ -13,25 +13,39 @@ import {
 const evidenceRoot = join(".omo", "evidence", "home-training", "task-12", "lighthouse")
 const categories = ["performance", "accessibility", "best-practices", "seo"]
 
-mkdirSync(evidenceRoot, { recursive: true })
-await withPreviewServer(async (preview) => {
-  const auditUrl = `${preview.url}/#/`
-  const mobile = await runPreset("mobile", auditUrl)
-  const desktop = await runPreset("desktop", auditUrl)
-  const summary = { desktop: summarize(desktop), mobile: summarize(mobile) }
-  writeJsonReport(join(evidenceRoot, "summary.json"), summary)
+class LighthouseScoreError extends Error {
+  constructor(preset, category, score) {
+    super(`${preset} ${category} median was ${score}, expected 100`)
+    this.name = "LighthouseScoreError"
+    this.category = category
+    this.preset = preset
+    this.score = score
+  }
+}
 
-  for (const [preset, scores] of Object.entries(summary)) {
-    for (const category of categories) {
-      if (scores[category] !== 100) {
-        console.error(`${preset} ${category} median was ${scores[category]}, expected 100`)
-        process.exit(1)
+try {
+  mkdirSync(evidenceRoot, { recursive: true })
+  await withPreviewServer(async (preview) => {
+    const auditUrl = `${preview.url}/#/`
+    const mobile = await runPreset("mobile", auditUrl)
+    const desktop = await runPreset("desktop", auditUrl)
+    const summary = { desktop: summarize(desktop), mobile: summarize(mobile) }
+    writeJsonReport(join(evidenceRoot, "summary.json"), summary)
+
+    for (const [preset, scores] of Object.entries(summary)) {
+      for (const category of categories) {
+        if (scores[category] !== 100) {
+          throw new LighthouseScoreError(preset, category, scores[category])
+        }
       }
     }
-  }
 
-  console.log(`Lighthouse real-Chrome gate passed: ${JSON.stringify(summary)}`)
-})
+    console.log(`Lighthouse real-Chrome gate passed: ${JSON.stringify(summary)}`)
+  })
+} catch (error) {
+  console.error(formatError(error))
+  process.exitCode = 1
+}
 
 async function runPreset(preset, auditUrl) {
   const runs = []
@@ -102,4 +116,11 @@ function summarize(runs) {
 
 function median(values) {
   return [...values].sort((left, right) => left - right)[Math.floor(values.length / 2)]
+}
+
+function formatError(error) {
+  if (error instanceof Error) {
+    return error.stack ?? error.message
+  }
+  return String(error)
 }

@@ -8,22 +8,44 @@ const evidenceRoot = join(".omo", "evidence", "home-training", "task-12")
 const bundlePath = join(evidenceRoot, "react-scan-lite.js")
 const reportPath = join(evidenceRoot, "react-scan-lite-report.json")
 
-mkdirSync(evidenceRoot, { recursive: true })
-await bundleReactScanLite(bundlePath)
-
-await withPreviewServer(async (preview) => {
-  const report = await runReactScanAudit(preview.url)
-  writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8")
-
-  if (!report.instrumented || report.commitEventCount === 0 || report.unnecessaryEventCount > 0) {
-    console.error(JSON.stringify(report, null, 2))
-    process.exit(1)
+class ReactScanGateError extends Error {
+  constructor(report) {
+    super(`react-scan/lite gate failed; report ${reportPath}`)
+    this.name = "ReactScanGateError"
+    this.report = report
   }
+}
 
-  console.log(
-    `react-scan/lite gate passed: ${report.commitEventCount} commits, 0 unnecessary; report ${reportPath}`,
-  )
-})
+try {
+  mkdirSync(evidenceRoot, { recursive: true })
+  await bundleReactScanLite(bundlePath)
+
+  await withPreviewServer(async (preview) => {
+    const report = await runReactScanAudit(preview.url)
+    writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8")
+
+    if (!report.instrumented || report.commitEventCount === 0 || report.unnecessaryEventCount > 0) {
+      throw new ReactScanGateError(report)
+    }
+
+    console.log(
+      `react-scan/lite gate passed: ${report.commitEventCount} commits, 0 unnecessary; report ${reportPath}`,
+    )
+  })
+} catch (error) {
+  console.error(formatError(error))
+  process.exitCode = 1
+}
+
+function formatError(error) {
+  if (error instanceof ReactScanGateError) {
+    return `${error.message}\n${JSON.stringify(error.report, null, 2)}`
+  }
+  if (error instanceof Error) {
+    return error.stack ?? error.message
+  }
+  return String(error)
+}
 
 async function runReactScanAudit(previewUrl) {
   const bundleSource = readFileSync(bundlePath, "utf8")

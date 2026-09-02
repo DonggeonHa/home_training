@@ -1,11 +1,14 @@
 import { defineConfig, devices } from "@playwright/test"
 
+const previewPort = readPreviewPort()
+const previewUrl = `http://127.0.0.1:${previewPort}`
+
 export default defineConfig({
   testDir: "./src",
   testIgnore: ["features/dashboard/todo11-visual-qa.spec.ts"],
   testMatch: "**/*.spec.ts",
   use: {
-    baseURL: "http://127.0.0.1:4190",
+    baseURL: previewUrl,
     trace: "on-first-retry",
   },
   projects: [
@@ -15,8 +18,23 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm exec vite preview --host 127.0.0.1 --port 4190 --strictPort",
+    command: `pnpm exec vite preview --host 127.0.0.1 --port ${previewPort} --strictPort`,
     reuseExistingServer: false,
-    url: "http://127.0.0.1:4190",
+    url: previewUrl,
   },
 })
+
+function readPreviewPort(): number {
+  const { PLAYWRIGHT_PREVIEW_PORT: configuredPort } = process.env
+  if (configuredPort !== undefined) {
+    const parsedPort = Number.parseInt(configuredPort, 10)
+    if (!Number.isInteger(parsedPort) || String(parsedPort) !== configuredPort) {
+      throw new Error(`PLAYWRIGHT_PREVIEW_PORT must be an integer, got ${configuredPort}`)
+    }
+    return parsedPort
+  }
+
+  const derivedPort = 43_000 + (process.pid % 1_000)
+  process.env["PLAYWRIGHT_PREVIEW_PORT"] = String(derivedPort)
+  return derivedPort
+}
