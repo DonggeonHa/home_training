@@ -11,7 +11,19 @@ const now = new Date("2026-09-02T00:00:00.000Z")
 const sessionId = SessionIdSchema.parse("11111111-1111-4111-8111-111111111111")
 
 describe("workout session reducer next-level fallback", () => {
-  it("switches remaining next-level test sets to current level after a first-set miss", () => {
+  it("fallbacks only for a safe low first rep set", () => {
+    const saved = saveFirstTestSet({ value: "0" })
+    const plan = saved.session?.categoryPlans[0]
+
+    expect(saved.error).toBeNull()
+    expect(plan?.entry.level).toBe(0)
+    expect(plan?.entry.sets).toHaveLength(0)
+    expect(plan?.testFallbackLevel).toBeUndefined()
+    expect(plan?.testAttemptEntry?.level).toBe(1)
+    expect(plan?.testAttemptEntry?.sets).toHaveLength(1)
+  })
+
+  it("keeps current-level fallback sets from replacing the saved test attempt", () => {
     const opened = reduceWorkout(
       reduceWorkout(
         createWorkoutState({ stored: testUnlockedState(), nowMs: now.getTime(), sessionId }),
@@ -19,45 +31,47 @@ describe("workout session reducer next-level fallback", () => {
       ),
       { type: "setDraftOpened" },
     )
-    const testPlan = opened.session?.categoryPlans[0]
-    const testMinimum =
-      testPlan?.entry.metricRule.kind === "reps" ? testPlan.entry.metricRule.min : 1
     const failedFirstSet = reduceWorkout(
       reduceWorkout(opened, {
         field: "valueText",
         type: "draftTextChanged",
-        value: String(Math.max(0, testMinimum - 1)),
+        value: "0",
       }),
       { type: "setSaved" },
     )
-    const fallbackPlan = failedFirstSet.session?.categoryPlans[0]
+    const fallbackSet = reduceWorkout(
+      reduceWorkout(reduceWorkout(failedFirstSet, { type: "setDraftOpened" }), {
+        field: "valueText",
+        type: "draftTextChanged",
+        value: "0",
+      }),
+      { type: "setSaved" },
+    )
+    const fallbackPlan = fallbackSet.session?.categoryPlans[0]
 
-    expect(testPlan?.entry.level).toBe(1)
     expect(fallbackPlan?.testAttemptEntry?.level).toBe(1)
     expect(fallbackPlan?.testAttemptEntry?.sets).toHaveLength(1)
     expect(fallbackPlan?.entry.level).toBe(0)
-    expect(fallbackPlan?.entry.sets).toHaveLength(0)
+    expect(fallbackPlan?.entry.sets).toHaveLength(1)
+  })
+
+  it.each([
+    ["failed form", { value: "0", qualityChanges: [{ field: "form", value: true }] }],
+    ["failed range of motion", { value: "0", qualityChanges: [{ field: "rom", value: true }] }],
+    ["out-of-range RIR", { rir: "4", value: "0" }],
+  ] as const)("does not fallback when low first reps have %s", (_caseName, input) => {
+    const saved = saveFirstTestSet(input)
+    const plan = saved.session?.categoryPlans[0]
+
+    expect(saved.error).toBeNull()
+    expect(plan?.entry.level).toBe(1)
+    expect(plan?.entry.sets).toHaveLength(1)
+    expect(plan?.testFallbackLevel).toBe(0)
+    expect(plan?.testAttemptEntry).toBeUndefined()
   })
 
   it("keeps next-level testing active after a passing first set", () => {
-    const opened = reduceWorkout(
-      reduceWorkout(
-        createWorkoutState({ stored: testUnlockedState(), nowMs: now.getTime(), sessionId }),
-        { type: "commonWarmupCompleted" },
-      ),
-      { type: "setDraftOpened" },
-    )
-    const testPlan = opened.session?.categoryPlans[0]
-    const testMinimum =
-      testPlan?.entry.metricRule.kind === "reps" ? testPlan.entry.metricRule.min : 1
-    const savedFirstSet = reduceWorkout(
-      reduceWorkout(opened, {
-        field: "valueText",
-        type: "draftTextChanged",
-        value: String(testMinimum),
-      }),
-      { type: "setSaved" },
-    )
+    const savedFirstSet = saveFirstTestSet({ value: "100" })
     const activePlan = savedFirstSet.session?.categoryPlans[0]
 
     expect(activePlan?.testAttemptEntry).toBeUndefined()
@@ -123,6 +137,50 @@ type FirstTestSetInput = {
   readonly set:
     | { readonly kind: "single"; readonly value: number }
     | { readonly kind: "perSide"; readonly left: number; readonly right: number }
+}
+
+type QualityChangeInput = {
+  readonly field: "form" | "rom"
+  readonly value: boolean
+}
+
+type FirstTestSaveInput = {
+  readonly value: string
+  readonly rir?: string | undefined
+  readonly qualityChanges?: readonly QualityChangeInput[] | undefined
+}
+
+function saveFirstTestSet(input: FirstTestSaveInput): WorkoutState {
+  const opened = reduceWorkout(
+    reduceWorkout(
+      createWorkoutState({ stored: testUnlockedState(), nowMs: now.getTime(), sessionId }),
+      { type: "commonWarmupCompleted" },
+    ),
+    { type: "setDraftOpened" },
+  )
+  const withValue = reduceWorkout(opened, {
+    field: "valueText",
+    type: "draftTextChanged",
+    value: input.value,
+  })
+  const withRir =
+    input.rir === undefined
+      ? withValue
+      : reduceWorkout(withValue, {
+          field: "rirText",
+          type: "draftTextChanged",
+          value: input.rir,
+        })
+  const withQuality = (input.qualityChanges ?? []).reduce(
+    (state, change) =>
+      reduceWorkout(state, {
+        field: change.field,
+        type: "qualityChanged",
+        value: change.value,
+      }),
+    withRir,
+  )
+  return reduceWorkout(withQuality, { type: "setSaved" })
 }
 
 function stateWithFirstTestSet(input: FirstTestSetInput): WorkoutState {

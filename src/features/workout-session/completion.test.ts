@@ -154,8 +154,52 @@ describe("workout session completion", () => {
       now: startedAt,
     })
 
-    expect(patch.progress?.squat).toMatchObject({ level: 0, status: "testUnlocked" })
+    expect(patch.progress?.squat).toMatchObject({ level: 0, status: "active" })
     expect(patch.completedSession?.entries.slice(0, 2).map((entry) => entry.level)).toEqual([1, 0])
+  })
+
+  it("returns a mixed fallback completion to active current-level progress", () => {
+    const stored = createCompletedOnboardingState()
+    const progress = {
+      ...stored.progress,
+      squat: {
+        ...stored.progress.squat,
+        level: 0,
+        status: "testUnlocked" as const,
+        qualifiedSessionIds: [SessionIdSchema.parse("55555555-5555-4555-8555-555555555555")],
+      },
+    }
+    const session = startWorkoutSession({
+      stored: { ...stored, progress },
+      now: startedAt,
+      sessionId,
+    })
+    const squatPlan = readPlan(session, 0)
+    const fallbackLevel = readLevel(readCatalogCategory(categoryId("squat")), 0)
+    const mixedSession = replacePlan(session, {
+      ...squatPlan,
+      entry: {
+        categoryId: squatPlan.categoryId,
+        exerciseName: fallbackLevel.name,
+        level: fallbackLevel.level,
+        metricRule: fallbackLevel.metricRule,
+        sets: [singleSet(15, 2), singleSet(15, 2), singleSet(15, 2)],
+      },
+      testAttemptEntry: { ...squatPlan.entry, sets: [singleSet(3, 2)] },
+    })
+
+    const patch = finishWorkout({
+      session: mixedSession,
+      stored: { ...stored, progress },
+      now: startedAt,
+    })
+
+    expect(patch.progress?.squat).toEqual({
+      categoryId: progress.squat.categoryId,
+      level: 0,
+      status: "active",
+      qualifiedSessionIds: [],
+    })
   })
 })
 

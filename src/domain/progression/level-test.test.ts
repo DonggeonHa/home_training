@@ -193,4 +193,53 @@ describe("evaluateLevelTest", () => {
       fallbackLevel: 5,
     })
   })
+
+  it("fails instead of falling back when the first short test set has concerning quality", () => {
+    // Given: the first next-level set misses numerically and also reports pain.
+    const currentProgress = progress()
+    const painfulShortSet = {
+      ...singleSet(3),
+      quality: { pain: true, form: "good" as const, rom: "full" as const },
+    }
+
+    // When: the level test is evaluated.
+    const result = evaluateLevelTest({
+      progress: currentProgress,
+      currentLevel: 3,
+      nextLevel: 4,
+      entry: entry({ ...repsRule, min: 8, max: 12 }, [
+        painfulShortSet,
+        singleSet(10),
+        singleSet(10),
+      ]),
+    })
+
+    // Then: concerning quality takes priority over mixed fallback.
+    expect(result).toEqual({
+      kind: "failed",
+      reason: "set-below-minimum",
+      progress: currentProgress,
+    })
+  })
+
+  it("fails instead of falling back when a first short test set has invalid final RIR", () => {
+    // Given: the first next-level set misses numerically and the final RIR is outside the gate.
+    const currentProgress = progress()
+    const highRirSet = { ...singleSet(10), rir: 4 }
+
+    // When: the level test is evaluated.
+    const result = evaluateLevelTest({
+      progress: currentProgress,
+      currentLevel: 3,
+      nextLevel: 4,
+      entry: entry({ ...repsRule, min: 8, max: 12 }, [singleSet(3), singleSet(10), highRirSet]),
+    })
+
+    // Then: invalid RIR takes priority over mixed fallback.
+    expect(result).toEqual({
+      kind: "failed",
+      reason: "set-below-minimum",
+      progress: currentProgress,
+    })
+  })
 })

@@ -153,6 +153,83 @@ describe("SessionSections", () => {
     }
   })
 
+  it("does not restore focus again when an already closed dialog unmounts", () => {
+    const showModalDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLDialogElement.prototype,
+      "showModal",
+    )
+    const closeDescriptor = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, "close")
+    Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+      configurable: true,
+      value: function showModal(this: HTMLDialogElement) {
+        this.setAttribute("open", "")
+      },
+    })
+    Object.defineProperty(HTMLDialogElement.prototype, "close", {
+      configurable: true,
+      value: function closeDialog(this: HTMLDialogElement) {
+        this.removeAttribute("open")
+      },
+    })
+
+    try {
+      const opener = document.createElement("button")
+      document.body.append(opener)
+      opener.focus()
+      const focus = vi.spyOn(opener, "focus")
+      const { rerender, unmount } = render(
+        <AbandonDialog open={true} onCancel={vi.fn()} onConfirm={vi.fn()} />,
+      )
+
+      rerender(<AbandonDialog open={false} onCancel={vi.fn()} onConfirm={vi.fn()} />)
+      unmount()
+
+      expect(focus).toHaveBeenCalledTimes(1)
+      opener.remove()
+    } finally {
+      restorePrototypeMethod("showModal", showModalDescriptor)
+      restorePrototypeMethod("close", closeDescriptor)
+    }
+  })
+
+  it("does not restore focus to a disconnected opener when an open dialog unmounts", () => {
+    const showModalDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLDialogElement.prototype,
+      "showModal",
+    )
+    const closeDescriptor = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, "close")
+    Object.defineProperty(HTMLDialogElement.prototype, "showModal", {
+      configurable: true,
+      value: function showModal(this: HTMLDialogElement) {
+        this.setAttribute("open", "")
+      },
+    })
+    Object.defineProperty(HTMLDialogElement.prototype, "close", {
+      configurable: true,
+      value: function closeDialog(this: HTMLDialogElement) {
+        this.removeAttribute("open")
+      },
+    })
+
+    try {
+      const opener = document.createElement("button")
+      document.body.append(opener)
+      opener.focus()
+      const focus = vi.spyOn(opener, "focus")
+      const { unmount } = render(
+        <AbandonDialog open={true} onCancel={vi.fn()} onConfirm={vi.fn()} />,
+      )
+
+      opener.remove()
+      unmount()
+
+      expect(focus).not.toHaveBeenCalled()
+    } finally {
+      restorePrototypeMethod("showModal", showModalDescriptor)
+      restorePrototypeMethod("close", closeDescriptor)
+    }
+  })
+
   it("deduplicates rendered guidance items", () => {
     expect(uniqueItems(["흉통", "흉통", "저림"])).toEqual(["흉통", "저림"])
   })

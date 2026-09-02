@@ -8,12 +8,21 @@ export function SetList(props: {
   readonly metricRule: MetricRule
   readonly sets: readonly SetRecord[]
 }) {
+  const setKeyCounts = new Map<string, number>()
+  const setItems = props.sets.map((set, index) => {
+    const contentKey = setRecordKey(set)
+    const occurrence = setKeyCounts.get(contentKey) ?? 0
+    setKeyCounts.set(contentKey, occurrence + 1)
+    return {
+      key: `${contentKey}-occurrence-${occurrence}`,
+      label: `${index + 1}세트 · ${set.kind === "single" ? set.value : `${set.left}/${set.right}`} ${unitLabel(props.metricRule)}`,
+    }
+  })
+
   return (
     <ol className="workout-set-list">
-      {props.sets.map((set, index) => (
-        <li key={setRecordKey(set)}>
-          {`${index + 1}세트 · ${set.kind === "single" ? set.value : `${set.left}/${set.right}`} ${unitLabel(props.metricRule)}`}
-        </li>
+      {setItems.map((setItem) => (
+        <li key={setItem.key}>{setItem.label}</li>
       ))}
     </ol>
   )

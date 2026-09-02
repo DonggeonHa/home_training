@@ -1,5 +1,6 @@
 import { assertNever } from "../../domain/assert-never"
 import type { MetricRule, SetRecord } from "../../domain/contracts"
+import { setMeetsQualityAndRirGates } from "../../domain/progression/metric-evaluation"
 import { currentCategoryPlan, readCatalogCategory, readLevel } from "./engine"
 import { replaceCurrentPlan } from "./session-state-helpers"
 import type { WorkoutCategoryPlan, WorkoutState } from "./types"
@@ -14,6 +15,7 @@ export function maybeSwitchFailedFirstTestSetToCurrentLevel(state: WorkoutState)
     plan.testFallbackLevel === undefined ||
     firstSet === undefined ||
     plan.entry.sets.length !== 1 ||
+    !setMeetsQualityAndRirGates(plan.entry.metricRule, firstSet) ||
     firstSetMeetsMinimum(plan, firstSet)
   ) {
     return state
@@ -22,7 +24,12 @@ export function maybeSwitchFailedFirstTestSetToCurrentLevel(state: WorkoutState)
   const category = readCatalogCategory(plan.categoryId)
   const fallbackLevel = readLevel(category, plan.testFallbackLevel)
   return replaceCurrentPlan(state, {
-    ...plan,
+    categoryId: plan.categoryId,
+    categoryTitle: plan.categoryTitle,
+    prescribedSetCount: plan.prescribedSetCount,
+    qualification: plan.qualification,
+    stoppedByPain: plan.stoppedByPain,
+    pullChecklistConfirmed: plan.pullChecklistConfirmed,
     entry: {
       categoryId: plan.categoryId,
       exerciseName: fallbackLevel.name,

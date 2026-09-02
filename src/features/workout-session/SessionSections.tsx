@@ -1,5 +1,5 @@
 import { WarningCircle } from "@phosphor-icons/react/WarningCircle"
-import { type SyntheticEvent, useEffect, useRef, useState } from "react"
+import { type RefObject, type SyntheticEvent, useEffect, useRef, useState } from "react"
 import { Button } from "../../shared/ui"
 
 export function WarmupList({ complete }: { readonly complete: boolean }) {
@@ -104,8 +104,8 @@ export function AbandonDialog(props: {
       } else {
         dialog.removeAttribute("open")
       }
+      restoreReturnFocus(returnFocusRef)
     }
-    returnFocusRef.current?.focus()
   }, [props.open])
 
   useEffect(() => {
@@ -114,8 +114,8 @@ export function AbandonDialog(props: {
       /* c8 ignore next 3 */
       if (dialog?.open === true && typeof dialog.close === "function") {
         dialog.close()
+        restoreReturnFocus(returnFocusRef)
       }
-      returnFocusRef.current?.focus()
     }
   }, [])
 
@@ -145,4 +145,12 @@ export function AbandonDialog(props: {
 
 export function uniqueItems(items: readonly string[]): readonly string[] {
   return [...new Set(items)]
+}
+
+function restoreReturnFocus(returnFocusRef: RefObject<HTMLElement | null>) {
+  const returnTarget = returnFocusRef.current
+  returnFocusRef.current = null
+  if (returnTarget?.isConnected === true) {
+    returnTarget.focus()
+  }
 }

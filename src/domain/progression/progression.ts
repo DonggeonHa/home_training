@@ -89,6 +89,8 @@ export function evaluateLevelTest(input: EvaluateLevelTestInput): LevelTestResul
   const evaluation = evaluateEntry(input.entry, "minimum")
   const firstMiss = evaluation.remainingConditions[0]
   if (
+    evaluation.reasons.length === 1 &&
+    evaluation.reasons[0] === "set-below-upper-bound" &&
     (firstMiss?.kind === "set-upper-bound" || firstMiss?.kind === "side-upper-bound") &&
     firstMiss.setIndex === 0
   ) {

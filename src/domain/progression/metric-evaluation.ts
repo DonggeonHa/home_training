@@ -20,6 +20,25 @@ export function evaluateEntry(entry: SessionEntry, mode: GateMode): Evaluation {
   return combineEvaluations([metricEvaluation, qualityEvaluation, rirEvaluation])
 }
 
+export function setMeetsQualityAndRirGates(rule: MetricRule, set: SetRecord): boolean {
+  if (set.quality.pain || set.quality.form !== "good" || set.quality.rom !== "full") {
+    return false
+  }
+
+  switch (rule.kind) {
+    case "reps":
+    case "tempoReps":
+      return rule.rir === undefined
+        ? true
+        : set.rir !== undefined && set.rir >= rule.rir.min && set.rir <= rule.rir.max
+    case "duration":
+    case "terminal":
+      return true
+    default:
+      return assertNever(rule)
+  }
+}
+
 export function evaluateMetric(
   rule: MetricRule,
   sets: readonly SetRecord[],

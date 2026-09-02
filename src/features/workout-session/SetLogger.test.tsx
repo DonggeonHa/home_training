@@ -41,6 +41,20 @@ const terminalRule = {
 describe("SetLogger", () => {
   afterEach(() => cleanup())
 
+  it("renders identical recorded sets without duplicate React keys", () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    const set = { kind: "single", value: 10, quality: goodQuality() } as const
+
+    try {
+      render(<SetList metricRule={repsRule} sets={[set, set]} />)
+      expect(consoleError).not.toHaveBeenCalled()
+      expect(screen.getByText("1세트 · 10 회")).toBeVisible()
+      expect(screen.getByText("2세트 · 10 회")).toBeVisible()
+    } finally {
+      consoleError.mockRestore()
+    }
+  })
+
   it("renders unit labels for duration, tempo, and terminal set records", () => {
     const set = { kind: "single", value: 10, quality: goodQuality() } as const
 

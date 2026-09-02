@@ -54,26 +54,32 @@ function updateProgressFromSession(input: {
   for (const plan of input.plans) {
     const key = currentCategoryKey(plan.categoryId)
     const currentProgress = progress[key]
+    const entry = plan.entry
     const nextProgress =
       plan.testAttemptEntry !== undefined
-        ? currentProgress
-        : plan.entry.level > currentProgress.level
+        ? {
+            ...currentProgress,
+            level: entry.level,
+            status: "active" as const,
+            qualifiedSessionIds: [],
+          }
+        : entry.level > currentProgress.level
           ? evaluateLevelTest({
               currentLevel: currentProgress.level,
-              entry: plan.entry,
-              nextLevel: plan.entry.level,
+              entry,
+              nextLevel: entry.level,
               progress: currentProgress,
             }).progress
           : evaluateSessionQualification({
                 completedSessionCount: input.stored.completedSessions.length,
-                entry: plan.entry,
+                entry,
                 progress: currentProgress,
                 sessionId: input.completedSession.id,
               }).kind === "adaptation"
             ? currentProgress
             : readQualifiedProgress({
                 currentProgress,
-                entry: plan.entry,
+                entry,
                 sessionId: input.completedSession.id,
                 completedSessionCount: input.stored.completedSessions.length,
               })
