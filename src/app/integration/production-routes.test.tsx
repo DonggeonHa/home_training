@@ -1,6 +1,5 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { HashRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { App } from "../../App"
 import { APP_STORAGE_KEY } from "../../storage"
@@ -16,11 +15,7 @@ function renderProductionApp(
 ) {
   window.location.hash = path
 
-  return render(
-    <HashRouter>
-      <App downloads={downloads} storage={storage} />
-    </HashRouter>,
-  )
+  return render(<App downloads={downloads} storage={storage} />)
 }
 
 function createSeededStorage(state = createCompletedOnboardingState()) {

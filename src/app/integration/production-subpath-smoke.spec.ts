@@ -3,7 +3,7 @@ import { createCompletedOnboardingState } from "../../test/onboarding-fixtures"
 import { routeDistSubpath, seedCompletedState } from "./production-smoke-helpers"
 
 test.describe("production subpath smoke", () => {
-  test("serves the HashRouter app from a deployment subpath", async ({ page }) => {
+  test("serves the hash-routed app from a deployment subpath", async ({ page }) => {
     await seedCompletedState(page, createCompletedOnboardingState(), "dark")
     await routeDistSubpath(page, "home_training")
 

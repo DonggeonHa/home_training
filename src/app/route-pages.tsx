@@ -1,11 +1,11 @@
-import { Pulse } from "@phosphor-icons/react"
+import { Pulse } from "@phosphor-icons/react/Pulse"
 import { lazy, type ReactElement, useEffect } from "react"
-import { useNavigate, useParams } from "react-router-dom"
 import { EXERCISE_CATALOG } from "../domain/catalog"
 import type { CategoryId } from "../domain/contracts"
 import type { SettingsRestoreCommitResult } from "../features/settings/restore-contract"
 import type { WorkoutStoragePatch } from "../features/workout-session/types"
 import type { DownloadPort } from "../storage/ports"
+import { navigateHash } from "./hash-router"
 import { useAppStore } from "./store/provider"
 import type { WorkoutCompletionPatch } from "./store/types"
 
@@ -57,7 +57,6 @@ type WorkoutRouteProps = {
 }
 
 export function WorkoutRoute({ onWorkoutCompleted }: WorkoutRouteProps): ReactElement {
-  const navigate = useNavigate()
   const { actions, state } = useAppStore()
   useDocumentTitle("운동 세션")
 
@@ -71,14 +70,17 @@ export function WorkoutRoute({ onWorkoutCompleted }: WorkoutRouteProps): ReactEl
         }
         actions.applyWorkoutCompletion(patch)
         onWorkoutCompleted(`루틴 ${state.stored.nextRoutine} 완료`)
-        navigate("/", { replace: true })
+        navigateHash("/", { replace: true })
       }}
     />
   )
 }
 
-export function SkillTreeRoute(): ReactElement {
-  const { categoryId } = useParams()
+type SkillTreeRouteProps = {
+  readonly categoryId?: string | undefined
+}
+
+export function SkillTreeRoute({ categoryId }: SkillTreeRouteProps): ReactElement {
   const { state } = useAppStore()
   const selectedCategoryId = readSelectedCategoryId(categoryId)
   const selectedCategory = EXERCISE_CATALOG.find((category) => category.id === selectedCategoryId)

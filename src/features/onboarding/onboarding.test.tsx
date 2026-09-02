@@ -1,6 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { HashRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { App } from "../../App"
 import { APP_STORAGE_KEY } from "../../storage"
@@ -11,11 +10,7 @@ import { SafetyOnboarding } from "./SafetyOnboarding"
 function renderApp(storage: MemoryStoragePort) {
   window.location.hash = "/"
 
-  return render(
-    <HashRouter>
-      <App storage={storage} />
-    </HashRouter>,
-  )
+  return render(<App storage={storage} />)
 }
 
 describe("safety onboarding", () => {

@@ -1,4 +1,4 @@
-import { WarningCircle } from "@phosphor-icons/react"
+import { WarningCircle } from "@phosphor-icons/react/WarningCircle"
 import { type SyntheticEvent, useEffect, useRef, useState } from "react"
 import { Button } from "../../shared/ui"
 

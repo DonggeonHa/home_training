@@ -1,9 +1,13 @@
-import type { Icon } from "@phosphor-icons/react"
-import { ClipboardText, GearSix, House, SneakerMove, TreeStructure } from "@phosphor-icons/react"
-import { type ReactElement, Suspense } from "react"
-import { Navigate, NavLink, Route, Routes } from "react-router-dom"
+import { ClipboardText } from "@phosphor-icons/react/ClipboardText"
+import type { Icon } from "@phosphor-icons/react/dist/lib/types"
+import { GearSix } from "@phosphor-icons/react/GearSix"
+import { House } from "@phosphor-icons/react/House"
+import { SneakerMove } from "@phosphor-icons/react/SneakerMove"
+import { TreeStructure } from "@phosphor-icons/react/TreeStructure"
+import { type ReactElement, Suspense, useEffect } from "react"
 import { OnboardingGate } from "../features/onboarding/OnboardingGate"
 import type { DownloadPort } from "../storage/ports"
+import { createHashHref, isHashPathActive, navigateHash, useHashPath } from "./hash-router"
 import {
   DashboardRoute,
   HistoryRoute,
@@ -55,19 +59,25 @@ const routes = [
 ] as const satisfies readonly RouteDefinition[]
 
 export function PrimaryNavigation(): ReactElement {
+  const currentPath = useHashPath()
+
   return (
     <nav className="app-nav" aria-label="주요 메뉴">
-      {routes.map((route) => (
-        <NavLink
-          className={({ isActive }) => (isActive ? "app-nav-link active" : "app-nav-link")}
-          end={route.href === "/"}
-          key={route.href}
-          to={route.href}
-        >
-          <route.icon size={22} weight="duotone" aria-hidden="true" />
-          <span>{route.title}</span>
-        </NavLink>
-      ))}
+      {routes.map((route) => {
+        const active = isHashPathActive(currentPath, route.href, { end: route.href === "/" })
+
+        return (
+          <a
+            aria-current={active ? "page" : undefined}
+            className={active ? "app-nav-link active" : "app-nav-link"}
+            href={createHashHref(route.href)}
+            key={route.href}
+          >
+            <route.icon size={22} weight="duotone" aria-hidden="true" />
+            <span>{route.title}</span>
+          </a>
+        )
+      })}
     </nav>
   )
 }
@@ -78,23 +88,53 @@ type AppRoutesProps = {
 }
 
 export function AppRoutes({ downloads, onWorkoutCompleted }: AppRoutesProps): ReactElement {
+  const currentPath = useHashPath()
+
+  useEffect(() => {
+    if (currentPath === "/plan") {
+      navigateHash("/settings", { replace: true })
+    }
+  }, [currentPath])
+
   return (
     <OnboardingGate>
       <Suspense fallback={<RouteLoading />}>
-        <Routes>
-          <Route element={<DashboardRoute />} path="/" />
-          <Route
-            element={<WorkoutRoute onWorkoutCompleted={onWorkoutCompleted} />}
-            path="/workout"
-          />
-          <Route element={<SkillTreeRoute />} path="/levels" />
-          <Route element={<SkillTreeRoute />} path="/levels/:categoryId" />
-          <Route element={<HistoryRoute />} path="/record" />
-          <Route element={<SettingsRoute downloads={downloads} />} path="/settings" />
-          <Route element={<Navigate replace to="/settings" />} path="/plan" />
-          <Route element={<NotFoundRoute />} path="*" />
-        </Routes>
+        {renderRoute(currentPath, downloads, onWorkoutCompleted)}
       </Suspense>
     </OnboardingGate>
+  )
+}
+
+function renderRoute(
+  path: string,
+  downloads: DownloadPort,
+  onWorkoutCompleted: (message: string) => void,
+): ReactElement {
+  switch (path) {
+    case "/":
+      return <DashboardRoute />
+    case "/workout":
+      return <WorkoutRoute onWorkoutCompleted={onWorkoutCompleted} />
+    case "/record":
+      return <HistoryRoute />
+    case "/settings":
+    case "/plan":
+      return <SettingsRoute downloads={downloads} />
+    default:
+      return renderSkillTreeRoute(path)
+  }
+}
+
+function renderSkillTreeRoute(path: string): ReactElement {
+  if (path === "/levels") {
+    return <SkillTreeRoute />
+  }
+
+  const categoryMatch = /^\/levels\/([^/]+)$/.exec(path)
+
+  return categoryMatch === null ? (
+    <NotFoundRoute />
+  ) : (
+    <SkillTreeRoute categoryId={categoryMatch[1]} />
   )
 }

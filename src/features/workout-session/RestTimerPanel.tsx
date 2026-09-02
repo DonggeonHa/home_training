@@ -1,4 +1,4 @@
-import { Timer } from "@phosphor-icons/react"
+import { Timer } from "@phosphor-icons/react/Timer"
 import { Button } from "../../shared/ui"
 import type { WorkoutAction } from "./reducer"
 import type { WorkoutState } from "./types"

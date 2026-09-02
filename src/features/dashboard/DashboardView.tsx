@@ -1,4 +1,5 @@
-import { ArrowRight, FlagCheckered } from "@phosphor-icons/react"
+import { ArrowRight } from "@phosphor-icons/react/ArrowRight"
+import { FlagCheckered } from "@phosphor-icons/react/FlagCheckered"
 import { Progress } from "../../shared/ui"
 import type { StoredState } from "../../storage"
 import { adaptationProgressLabel, buildDashboardCards } from "./model"

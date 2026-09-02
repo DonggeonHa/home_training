@@ -1,4 +1,6 @@
-import { Barbell, Moon, Sun } from "@phosphor-icons/react"
+import { Barbell } from "@phosphor-icons/react/Barbell"
+import { Moon } from "@phosphor-icons/react/Moon"
+import { Sun } from "@phosphor-icons/react/Sun"
 import { useState } from "react"
 import { AppRoutes, PrimaryNavigation } from "./app/routes"
 import { AppStoreProvider, useAppStore } from "./app/store/provider"

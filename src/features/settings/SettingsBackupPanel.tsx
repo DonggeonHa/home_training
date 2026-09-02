@@ -1,4 +1,5 @@
-import { DownloadSimple, UploadSimple } from "@phosphor-icons/react"
+import { DownloadSimple } from "@phosphor-icons/react/DownloadSimple"
+import { UploadSimple } from "@phosphor-icons/react/UploadSimple"
 import { type ReactElement, useRef, useState } from "react"
 import { Button, Field } from "../../shared/ui"
 import { createRestorePreview, exportStoredState, type RestorePreview } from "../../storage/backup"

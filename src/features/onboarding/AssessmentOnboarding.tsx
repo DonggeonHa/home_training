@@ -1,4 +1,6 @@
-import { ArrowRight, FloppyDisk, Play } from "@phosphor-icons/react"
+import { ArrowRight } from "@phosphor-icons/react/ArrowRight"
+import { FloppyDisk } from "@phosphor-icons/react/FloppyDisk"
+import { Play } from "@phosphor-icons/react/Play"
 import { useState } from "react"
 import type { AssessmentSetInput, AssessmentStep } from "../../app/store"
 import { Button, Field, Notice } from "../../shared/ui"

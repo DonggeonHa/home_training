@@ -1,4 +1,7 @@
-import { CheckCircle, Info, WarningCircle, X } from "@phosphor-icons/react"
+import { CheckCircle } from "@phosphor-icons/react/CheckCircle"
+import { Info } from "@phosphor-icons/react/Info"
+import { WarningCircle } from "@phosphor-icons/react/WarningCircle"
+import { X } from "@phosphor-icons/react/X"
 import {
   type ButtonHTMLAttributes,
   cloneElement,

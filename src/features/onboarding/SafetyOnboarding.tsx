@@ -1,4 +1,5 @@
-import { FirstAidKit, WarningCircle } from "@phosphor-icons/react"
+import { FirstAidKit } from "@phosphor-icons/react/FirstAidKit"
+import { WarningCircle } from "@phosphor-icons/react/WarningCircle"
 import { forwardRef, useEffect, useRef, useState } from "react"
 import type { SafetyAnswers, SafetyGate } from "../../app/store"
 import { Button, Notice } from "../../shared/ui"
