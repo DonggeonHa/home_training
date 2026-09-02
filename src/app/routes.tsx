@@ -1,48 +1,18 @@
 import type { Icon } from "@phosphor-icons/react"
-import {
-  ClipboardText,
-  GearSix,
-  House,
-  Pulse,
-  SneakerMove,
-  TreeStructure,
-} from "@phosphor-icons/react"
-import { lazy, Suspense, useEffect } from "react"
-import { Navigate, NavLink, Route, Routes, useNavigate, useParams } from "react-router-dom"
-import { EXERCISE_CATALOG } from "../domain/catalog"
-import type { CategoryId } from "../domain/contracts"
+import { ClipboardText, GearSix, House, SneakerMove, TreeStructure } from "@phosphor-icons/react"
+import { type ReactElement, Suspense } from "react"
+import { Navigate, NavLink, Route, Routes } from "react-router-dom"
 import { OnboardingGate } from "../features/onboarding/OnboardingGate"
-import type { SettingsRestoreCommitResult } from "../features/settings/restore-contract"
-import type { WorkoutStoragePatch } from "../features/workout-session/types"
 import type { DownloadPort } from "../storage/ports"
-import { useAppStore } from "./store/provider"
-import type { WorkoutCompletionPatch } from "./store/types"
-
-const DashboardView = lazy(() =>
-  import("../features/dashboard/DashboardView").then((module) => ({
-    default: module.DashboardView,
-  })),
-)
-const HistoryView = lazy(() =>
-  import("../features/history/HistoryView").then((module) => ({
-    default: module.HistoryView,
-  })),
-)
-const SettingsView = lazy(() =>
-  import("../features/settings/SettingsView").then((module) => ({
-    default: module.SettingsView,
-  })),
-)
-const SkillTreeView = lazy(() =>
-  import("../features/skill-tree/SkillTreeView").then((module) => ({
-    default: module.SkillTreeView,
-  })),
-)
-const WorkoutSessionPage = lazy(() =>
-  import("../features/workout-session/WorkoutSessionPage").then((module) => ({
-    default: module.WorkoutSessionPage,
-  })),
-)
+import {
+  DashboardRoute,
+  HistoryRoute,
+  NotFoundRoute,
+  RouteLoading,
+  SettingsRoute,
+  SkillTreeRoute,
+  WorkoutRoute,
+} from "./route-pages"
 
 type RouteDefinition = {
   readonly description: string
@@ -84,7 +54,7 @@ const routes = [
   },
 ] as const satisfies readonly RouteDefinition[]
 
-export function PrimaryNavigation() {
+export function PrimaryNavigation(): ReactElement {
   return (
     <nav className="app-nav" aria-label="주요 메뉴">
       {routes.map((route) => (
@@ -102,31 +72,12 @@ export function PrimaryNavigation() {
   )
 }
 
-function NotFoundPage() {
-  return (
-    <section className="route-page compact" aria-labelledby="not-found-title">
-      <Pulse size={36} weight="duotone" aria-hidden="true" />
-      <h1 id="not-found-title">페이지를 찾을 수 없습니다</h1>
-      <p>지원하지 않는 주소입니다. 홈 화면에서 다시 시작하세요.</p>
-      <a className="ui-button ui-button-primary" href="#/">
-        홈으로 돌아가기
-      </a>
-    </section>
-  )
-}
-
-function NotFoundRoute() {
-  useDocumentTitle("페이지 없음")
-
-  return <NotFoundPage />
-}
-
 type AppRoutesProps = {
   readonly downloads: DownloadPort
   readonly onWorkoutCompleted: (message: string) => void
 }
 
-export function AppRoutes({ downloads, onWorkoutCompleted }: AppRoutesProps) {
+export function AppRoutes({ downloads, onWorkoutCompleted }: AppRoutesProps): ReactElement {
   return (
     <OnboardingGate>
       <Suspense fallback={<RouteLoading />}>
@@ -146,106 +97,4 @@ export function AppRoutes({ downloads, onWorkoutCompleted }: AppRoutesProps) {
       </Suspense>
     </OnboardingGate>
   )
-}
-
-function RouteLoading() {
-  return (
-    <section className="route-page compact" aria-labelledby="route-loading-title">
-      <Pulse size={36} weight="duotone" aria-hidden="true" />
-      <h1 id="route-loading-title">화면을 불러오는 중입니다</h1>
-      <p role="status">운동 데이터를 유지한 채 다음 화면을 준비하고 있습니다.</p>
-    </section>
-  )
-}
-
-function DashboardRoute() {
-  const { state } = useAppStore()
-  useDocumentTitle("오늘의 대시보드")
-
-  return <DashboardView startHref="#/workout" state={state.stored} />
-}
-
-function WorkoutRoute({
-  onWorkoutCompleted,
-}: {
-  readonly onWorkoutCompleted: (message: string) => void
-}) {
-  const navigate = useNavigate()
-  const { actions, state } = useAppStore()
-  useDocumentTitle("운동 세션")
-
-  return (
-    <WorkoutSessionPage
-      stored={state.stored}
-      onActiveSessionChange={actions.changeActiveSession}
-      onComplete={(patch) => {
-        if (!isCompletionPatch(patch)) {
-          return
-        }
-        actions.applyWorkoutCompletion(patch)
-        onWorkoutCompleted(`루틴 ${state.stored.nextRoutine} 완료`)
-        navigate("/", { replace: true })
-      }}
-    />
-  )
-}
-
-function SkillTreeRoute() {
-  const { categoryId } = useParams()
-  const { state } = useAppStore()
-  const selectedCategoryId = readSelectedCategoryId(categoryId)
-  const selectedCategory = EXERCISE_CATALOG.find((category) => category.id === selectedCategoryId)
-  useDocumentTitle(
-    selectedCategory === undefined ? "전체 스킬트리" : `${selectedCategory.title} 스킬트리`,
-  )
-
-  if (categoryId !== undefined && selectedCategoryId === null) {
-    return <NotFoundRoute />
-  }
-
-  return <SkillTreeView selectedCategoryId={selectedCategoryId ?? undefined} state={state.stored} />
-}
-
-function HistoryRoute() {
-  const { state } = useAppStore()
-  useDocumentTitle("기록과 성장")
-
-  return <HistoryView state={state.stored} />
-}
-
-function SettingsRoute({ downloads }: { readonly downloads: DownloadPort }) {
-  const { actions, state } = useAppStore()
-  useDocumentTitle("설정과 백업")
-
-  return (
-    <SettingsView
-      currentState={state.stored}
-      downloads={downloads}
-      onReducedMotionChange={actions.setReducedMotionPreference}
-      onRestoreConfirmed={(nextState): SettingsRestoreCommitResult =>
-        actions.replaceStoredState(nextState)
-      }
-      onThemeChange={actions.setThemePreference}
-      reducedMotion={state.display.reducedMotionPreference}
-      theme={state.display.themePreference}
-    />
-  )
-}
-
-function useDocumentTitle(title: string): void {
-  useEffect(() => {
-    document.title = `${title} | 홈트레이닝 LEVEL UP`
-  }, [title])
-}
-
-function readSelectedCategoryId(categoryId: string | undefined): CategoryId | null {
-  if (categoryId === undefined) {
-    return null
-  }
-
-  return EXERCISE_CATALOG.find((category) => category.id === categoryId)?.id ?? null
-}
-
-function isCompletionPatch(patch: WorkoutStoragePatch): patch is WorkoutCompletionPatch {
-  return patch.activeSession === null
 }
