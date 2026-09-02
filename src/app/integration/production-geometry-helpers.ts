@@ -1,6 +1,13 @@
 import type { Page } from "@playwright/test"
 
-type GeometryBox = {
+export type GeometryRect = {
+  readonly bottom: number
+  readonly left: number
+  readonly right: number
+  readonly top: number
+}
+
+export type GeometryBox = GeometryRect & {
   readonly bottom: number
   readonly className: string
   readonly left: number
@@ -10,14 +17,33 @@ type GeometryBox = {
   readonly top: number
 }
 
+export type GeometrySnapshot = {
+  readonly blocker: GeometryRect
+  readonly content: GeometryRect | null
+  readonly intersections: readonly GeometryBox[]
+  readonly main: GeometryRect
+  readonly viewport: {
+    readonly height: number
+    readonly width: number
+  }
+}
+
 export async function findMainContentNavIntersections(page: Page): Promise<readonly GeometryBox[]> {
-  return findMainContentIntersections(page, ".app-nav", [])
+  return (await readNavContentGeometry(page)).intersections
 }
 
 export async function findMainContentActionIntersections(
   page: Page,
 ): Promise<readonly GeometryBox[]> {
-  return findMainContentIntersections(page, ".workout-sticky", [".workout-sticky"])
+  return (await readActionContentGeometry(page)).intersections
+}
+
+export async function readNavContentGeometry(page: Page): Promise<GeometrySnapshot> {
+  return readMainContentGeometry(page, ".app-nav", [])
+}
+
+export async function readActionContentGeometry(page: Page): Promise<GeometrySnapshot> {
+  return readMainContentGeometry(page, ".workout-sticky", [".workout-sticky"])
 }
 
 export async function readElementTextLineWidths(
@@ -61,11 +87,11 @@ export async function scrollMainContent(page: Page, position: "bottom" | "middle
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)))
 }
 
-async function findMainContentIntersections(
+async function readMainContentGeometry(
   page: Page,
   blockerSelector: string,
   ignoredSelectors: readonly string[],
-): Promise<readonly GeometryBox[]> {
+): Promise<GeometrySnapshot> {
   return page.evaluate(
     ({
       blockerSelector: evaluatedBlockerSelector,
@@ -82,7 +108,19 @@ async function findMainContentIntersections(
       const viewportHeight = window.innerHeight
       const viewportWidth = window.innerWidth
 
-      return [
+      const toGeometryRect = (rect: {
+        readonly bottom: number
+        readonly left: number
+        readonly right: number
+        readonly top: number
+      }): GeometryRect => ({
+        bottom: Math.round(rect.bottom),
+        left: Math.round(rect.left),
+        right: Math.round(rect.right),
+        top: Math.round(rect.top),
+      })
+
+      const contentBoxes = [
         ...main.querySelectorAll<HTMLElement>(
           [
             "h1",
@@ -114,13 +152,10 @@ async function findMainContentIntersections(
           }
 
           return {
-            bottom: Math.round(visibleRect.bottom),
+            ...toGeometryRect(visibleRect),
             className: element.className.toString(),
-            left: Math.round(visibleRect.left),
-            right: Math.round(visibleRect.right),
             tagName: element.tagName.toLowerCase(),
             text: element.textContent?.trim().replace(/\s+/g, " ").slice(0, 80) ?? "",
-            top: Math.round(visibleRect.top),
           }
         })
         .filter(
@@ -130,12 +165,36 @@ async function findMainContentIntersections(
             box.right > 0 &&
             box.left < viewportWidth &&
             box.bottom > 0 &&
-            box.top < viewportHeight &&
-            box.right > blockerRect.left &&
-            box.left < blockerRect.right &&
-            box.bottom > blockerRect.top &&
-            box.top < blockerRect.bottom,
+            box.top < viewportHeight,
         )
+
+      const intersections = contentBoxes.filter(
+        (box) =>
+          box.right > blockerRect.left &&
+          box.left < blockerRect.right &&
+          box.bottom > blockerRect.top &&
+          box.top < blockerRect.bottom,
+      )
+      const content =
+        contentBoxes.length === 0
+          ? null
+          : {
+              bottom: Math.max(...contentBoxes.map((box) => box.bottom)),
+              left: Math.min(...contentBoxes.map((box) => box.left)),
+              right: Math.max(...contentBoxes.map((box) => box.right)),
+              top: Math.min(...contentBoxes.map((box) => box.top)),
+            }
+
+      return {
+        blocker: toGeometryRect(blockerRect),
+        content,
+        intersections,
+        main: toGeometryRect(mainRect),
+        viewport: {
+          height: viewportHeight,
+          width: viewportWidth,
+        },
+      }
     },
     { blockerSelector, ignoredSelectors },
   )

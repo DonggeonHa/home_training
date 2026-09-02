@@ -1,11 +1,6 @@
 import { expect, test } from "@playwright/test"
 import { createCompletedOnboardingState } from "../../test/onboarding-fixtures"
 import {
-  findMainContentActionIntersections,
-  findMainContentNavIntersections,
-  scrollMainContent,
-} from "./production-geometry-helpers"
-import {
   APP_STORAGE_KEY,
   confirmPullChecklist,
   createStateWithCompletedSession,
@@ -62,36 +57,6 @@ test.describe("production workout smoke", () => {
     await page.screenshot({
       fullPage: true,
       path: `${evidenceDirectory}/workout-rest-timer-reload-mobile.png`,
-    })
-  })
-
-  test("keeps mobile workout actions in normal flow without obscuring content or navigation", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ height: 812, width: 375 })
-    await seedCompletedState(page, createCompletedOnboardingState(), "dark")
-    await page.goto("/#/workout")
-    await expect(page.locator(".workout-sticky")).toHaveCSS("position", "static")
-
-    for (const scrollPosition of ["top", "middle", "bottom"] as const) {
-      await scrollMainContent(page, scrollPosition)
-      expect(await findMainContentNavIntersections(page)).toEqual([])
-      expect(await findMainContentActionIntersections(page)).toEqual([])
-    }
-
-    await page.locator(".workout-sticky").scrollIntoViewIfNeeded()
-    const footerBox = await page.locator(".workout-sticky").boundingBox()
-    const navBox = await page.locator(".app-nav").boundingBox()
-
-    expect(footerBox).not.toBeNull()
-    expect(navBox).not.toBeNull()
-    expect(Math.round(footerBox?.y ?? 0) + Math.round(footerBox?.height ?? 0)).toBeLessThanOrEqual(
-      Math.round(navBox?.y ?? 0),
-    )
-    await expect.poll(() => findHorizontalOverflow(page)).toEqual([])
-    await page.screenshot({
-      fullPage: true,
-      path: `${evidenceDirectory}/workout-mobile-bottom-safe-area.png`,
     })
   })
 

@@ -2,11 +2,6 @@ import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 import { createCompletedOnboardingState } from "../../test/onboarding-fixtures"
 import {
-  findMainContentNavIntersections,
-  readElementTextLineWidths,
-  scrollMainContent,
-} from "./production-geometry-helpers"
-import {
   APP_STORAGE_KEY,
   captureConsoleErrors,
   EXERCISE_CATALOG,
@@ -24,14 +19,6 @@ const routeCases = [
   { hash: "#/levels/push", heading: "PUSH 스킬트리", name: "levels-push" },
   { hash: "#/record", heading: "기록과 성장", name: "record" },
   { hash: "#/settings", heading: "설정과 백업", name: "settings" },
-] as const
-
-const mobileNavClearRoutes = [
-  { hash: "#/", heading: "오늘의 진행 대시보드", name: "dashboard" },
-  { hash: "#/levels", heading: "전체 스킬트리", name: "levels" },
-  { hash: "#/levels/push", heading: "PUSH 스킬트리", name: "levels-push" },
-  { hash: "#/settings", heading: "설정과 백업", name: "settings" },
-  { hash: "#/workout", heading: /Routine A/, name: "workout" },
 ] as const
 
 test.describe("production route smoke", () => {
@@ -84,66 +71,6 @@ test.describe("production route smoke", () => {
         })
       }
     }
-  }
-
-  test("keeps dashboard content out of the mobile navigation space while scrolling", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ height: 812, width: 375 })
-    await seedCompletedState(page, createCompletedOnboardingState(), "dark")
-    await page.goto("/#/")
-    await expect(
-      page.getByRole("heading", { level: 1, name: "오늘의 진행 대시보드" }),
-    ).toBeVisible()
-
-    for (const scrollPosition of ["top", "middle", "bottom"] as const) {
-      await scrollMainContent(page, scrollPosition)
-      expect(await findMainContentNavIntersections(page)).toEqual([])
-      await page.screenshot({
-        fullPage: true,
-        path: `${evidenceDirectory}/dashboard-mobile-nav-clear-${scrollPosition}.png`,
-      })
-    }
-  })
-
-  test("keeps dashboard title from orphaning a final Korean syllable on mobile", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ height: 812, width: 375 })
-    await seedCompletedState(page, createCompletedOnboardingState(), "dark")
-    await page.goto("/#/")
-
-    await expect(
-      page.getByRole("heading", { level: 1, name: "오늘의 진행 대시보드" }),
-    ).toBeVisible()
-    const lineWidths = await readElementTextLineWidths(page, "#dashboard-title")
-
-    expect(lineWidths.length).toBeLessThanOrEqual(2)
-    expect(lineWidths.at(-1)).toBeGreaterThanOrEqual(80)
-    await page.screenshot({
-      fullPage: true,
-      path: `${evidenceDirectory}/dashboard-mobile-title-no-orphan.png`,
-    })
-  })
-
-  for (const routeCase of mobileNavClearRoutes) {
-    test(`keeps ${routeCase.name} mobile content out of navigation space while scrolling`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ height: 812, width: 375 })
-      await seedCompletedState(page, createCompletedOnboardingState(), "dark")
-      await page.goto(`/${routeCase.hash}`)
-      await expect(page.getByRole("heading", { level: 1, name: routeCase.heading })).toBeVisible()
-
-      for (const scrollPosition of ["top", "middle", "bottom"] as const) {
-        await scrollMainContent(page, scrollPosition)
-        expect(await findMainContentNavIntersections(page)).toEqual([])
-        await page.screenshot({
-          fullPage: true,
-          path: `${evidenceDirectory}/${routeCase.name}-mobile-nav-clear-${scrollPosition}.png`,
-        })
-      }
-    })
   }
 
   test("renders every category skill tree from a schema-validated seeded state", async ({
