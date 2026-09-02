@@ -1,0 +1,73 @@
+.app-nav {
+  position: static;
+  z-index: 1;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: min(100% - var(--space-8), 1184px);
+  gap: var(--space-1);
+  margin-inline: auto;
+  margin-block-end: var(--app-nav-safe-gap);
+  padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
+  border: 1px solid var(--border-default);
+  border-radius: var(--space-2);
+  background: var(--surface-elevated);
+}
+
+.app-nav-link {
+  display: grid;
+  min-width: 0;
+  min-height: 44px;
+  place-items: center;
+  gap: var(--space-1);
+  border-radius: var(--space-2);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-decoration: none;
+  transition:
+    color 120ms ease-out,
+    background-color 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+.app-nav-link span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.app-nav-link:hover,
+.app-nav-link.active {
+  background: var(--accent-primary);
+  color: var(--accent-ink);
+}
+
+.app-nav-link:active {
+  transform: translateY(1px);
+}
+
+@media (min-width: 1024px) {
+  .app-nav {
+    position: sticky;
+    top: 0;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    grid-row: 1 / span 2;
+    grid-template-columns: 1fr;
+    width: auto;
+    align-self: stretch;
+    margin-block-end: 0;
+    margin-inline: 0;
+    padding: var(--space-4);
+    border-block: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+
+  .app-nav-link {
+    align-content: center;
+    min-height: 64px;
+  }
+}
