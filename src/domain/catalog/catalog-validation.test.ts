@@ -204,6 +204,35 @@ describe("catalog validation malformed fixtures", () => {
     ])
   })
 
+  it("rejects levels outside the expected zero-based range before missing-level checks", () => {
+    const negativeLevelCategory = {
+      ...EXERCISE_CATALOG[0],
+      levels: EXERCISE_CATALOG[0].levels.map((level) =>
+        level.level === 0
+          ? { ...level, id: "push--1", level: -1, key: "push-out-of-range-negative" }
+          : level,
+      ),
+    }
+    const pastEndLevelCategory = {
+      ...EXERCISE_CATALOG[3],
+      levels: EXERCISE_CATALOG[3].levels.map((level) =>
+        level.level === 7
+          ? { ...level, id: "hinge-8", level: 8, key: "hinge-out-of-range-past-end" }
+          : level,
+      ),
+    }
+
+    const results = [
+      validateCatalog(cloneCatalogWithCategory(negativeLevelCategory)),
+      validateCatalog(cloneCatalogWithCategory(pastEndLevelCategory)),
+    ]
+
+    expect(results).toEqual([
+      { kind: "invalid", error: { kind: "out-of-range-level", categoryId: "push", level: -1 } },
+      { kind: "invalid", error: { kind: "out-of-range-level", categoryId: "hinge", level: 8 } },
+    ])
+  })
+
   it("throws on impossible validation metric variants outside the validation union", () => {
     const impossibleMetricCategory = {
       ...EXERCISE_CATALOG[0],

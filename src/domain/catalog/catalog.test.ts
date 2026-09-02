@@ -51,7 +51,7 @@ describe("complete exercise catalog", () => {
     // Then: category order and level counts match the approved progression source.
     expect(EXERCISE_CATALOG.map((category) => category.id)).toEqual(expectedCategoryIds)
     expect(CATEGORY_IDS).toEqual(expectedCategoryIds)
-    expect(CATALOG_VALIDATION_ERROR_KINDS).toHaveLength(16)
+    expect(CATALOG_VALIDATION_ERROR_KINDS).toHaveLength(17)
     expect(summary).toEqual([
       { id: "push", levelCount: EXPECTED_LEVEL_COUNTS.push },
       { id: "pull", levelCount: EXPECTED_LEVEL_COUNTS.pull },

@@ -2,6 +2,7 @@ import { z } from "zod"
 import { SCHEMA_VERSION } from "../domain/contracts"
 import {
   CategoryIdSchema,
+  CategoryProgressByIdSchema,
   SafetyClearanceSchema,
   SessionEntrySchema,
   SessionIdSchema,
@@ -114,20 +115,6 @@ export const ActiveSessionSchema = z
   })
   .strict()
 
-const CategoryProgressSchema = z
-  .object({
-    categoryId: CategoryIdSchema,
-    level: z.number().int().nonnegative(),
-    status: z.union([
-      z.literal("unassessed"),
-      z.literal("provisional"),
-      z.literal("active"),
-      z.literal("testUnlocked"),
-    ]),
-    qualifiedSessionIds: z.array(SessionIdSchema).readonly().optional(),
-  })
-  .strict()
-
 const CompletedSessionSchema = z
   .object({
     id: SessionIdSchema,
@@ -162,16 +149,7 @@ export const StoredStateSchema = z
     schemaVersion: z.literal(SCHEMA_VERSION),
     safety: SafetyClearanceSchema,
     nextRoutine: z.union([z.literal("A"), z.literal("B"), z.literal("C")]),
-    progress: z
-      .object({
-        push: CategoryProgressSchema,
-        pull: CategoryProgressSchema,
-        squat: CategoryProgressSchema,
-        hinge: CategoryProgressSchema,
-        verticalPush: CategoryProgressSchema,
-        core: CategoryProgressSchema,
-      })
-      .strict(),
+    progress: CategoryProgressByIdSchema,
     completedSessions: z.array(CompletedSessionSchema).readonly(),
     activeSession: ActiveSessionSchema.nullable(),
     assessment: AssessmentStateSchema,

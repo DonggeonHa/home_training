@@ -74,6 +74,13 @@ describe("backup and restore boundaries", () => {
         push: { ...current.progress.push, categoryId: "cardio" },
       },
     }
+    const swappedValidCategory = {
+      ...current,
+      progress: {
+        ...current.progress,
+        push: { ...current.progress.push, categoryId: "pull" },
+      },
+    }
     const extraField = { ...current, healthAnswers: { chestPain: false } }
 
     // When: the user previews each invalid input.
@@ -86,6 +93,10 @@ describe("backup and restore boundaries", () => {
     })
     const unknownField = createRestorePreview({ rawJson: JSON.stringify(extraField), current })
     const badCategory = createRestorePreview({ rawJson: JSON.stringify(invalidCategory), current })
+    const swappedCategory = createRestorePreview({
+      rawJson: JSON.stringify(swappedValidCategory),
+      current,
+    })
 
     // Then: current state remains byte-equivalent and no success is claimed.
     expect(oversized).toMatchObject({ kind: "invalid", reason: "tooLarge", currentState: current })
@@ -110,6 +121,11 @@ describe("backup and restore boundaries", () => {
       currentState: current,
     })
     expect(badCategory).toMatchObject({
+      kind: "invalid",
+      reason: "schemaMismatch",
+      currentState: current,
+    })
+    expect(swappedCategory).toMatchObject({
       kind: "invalid",
       reason: "schemaMismatch",
       currentState: current,

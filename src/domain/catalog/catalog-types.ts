@@ -5,6 +5,7 @@ export const CATALOG_VALIDATION_ERROR_KINDS = [
   "duplicate-category-id",
   "unknown-category-id",
   "duplicate-level",
+  "out-of-range-level",
   "missing-level",
   "invalid-level-id",
   "duplicate-level-key",
@@ -95,6 +96,7 @@ export type CatalogValidationError =
   | { readonly kind: "duplicate-category-id"; readonly categoryId: string }
   | { readonly kind: "unknown-category-id"; readonly categoryId: string }
   | { readonly kind: "duplicate-level"; readonly categoryId: string; readonly level: number }
+  | { readonly kind: "out-of-range-level"; readonly categoryId: string; readonly level: number }
   | { readonly kind: "missing-level"; readonly categoryId: string; readonly level: number }
   | { readonly kind: "invalid-level-id"; readonly categoryId: string; readonly level: number }
   | {

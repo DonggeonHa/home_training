@@ -98,6 +98,27 @@ describe("versioned persistence", () => {
     expect(result.rawSnapshot).toBe(JSON.stringify({ schemaVersion: 1 }))
   })
 
+  it("recovers when persisted progress categoryId values do not match their progress keys", () => {
+    // Given: current-version storage where the push progress record carries another valid category ID.
+    const storage = new MemoryStoragePort()
+    const mismatchedState = {
+      ...createDefaultStoredState(),
+      progress: {
+        ...createDefaultStoredState().progress,
+        push: { ...createDefaultStoredState().progress.push, categoryId: "pull" },
+      },
+    }
+    storage.values.set(APP_STORAGE_KEY, JSON.stringify(mismatchedState))
+
+    // When: the app hydrates local persistence.
+    const result = loadStoredState({ storage })
+
+    // Then: the persisted boundary rejects the mismatch and recovers to defaults.
+    expect(result.state).toEqual(createDefaultStoredState())
+    expect(result.notice).toMatchObject({ kind: "recovered", reason: "schemaMismatch" })
+    expect(result.rawSnapshot).toBe(JSON.stringify(mismatchedState))
+  })
+
   it("recovers when storage cannot be read", () => {
     // Given: browser storage rejects reads before bytes are available.
     const securityStorage = new ThrowingStoragePort(

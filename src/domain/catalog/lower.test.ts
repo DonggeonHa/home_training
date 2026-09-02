@@ -61,7 +61,7 @@ const expectedHinge = [
   ],
   [
     "3초 하강 RDL",
-    "12~15회 × 3세트 · 3초 하강",
+    "3초 하강 × 12~15회 × 3세트",
     { kind: "tempoReps", min: 12, max: 15, tempoSeconds: 3, sets: 3, laterality: "none" },
   ],
   [

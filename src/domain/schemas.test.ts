@@ -1,7 +1,37 @@
 import { describe, expect, it } from "vitest"
-import { CategoryIdSchema, MetricRuleSchema } from "./schemas"
+import { createDefaultStoredState } from "../storage/defaults"
+import { AppStateSchema, CategoryIdSchema, MetricRuleSchema } from "./schemas"
 
 describe("domain boundary schemas", () => {
+  it("rejects progress records whose categoryId does not match their AppState progress key", () => {
+    // Given: an otherwise valid app state with two valid category IDs swapped at the progress boundary.
+    const {
+      activeSession: _activeSession,
+      assessment: _assessment,
+      ...defaultAppState
+    } = createDefaultStoredState()
+    const state = {
+      ...defaultAppState,
+      progress: {
+        ...defaultAppState.progress,
+        push: { ...defaultAppState.progress.push, categoryId: "pull" },
+      },
+    }
+
+    // When: the untrusted state crosses the domain AppState boundary.
+    const result = AppStateSchema.safeParse(state)
+
+    // Then: the boundary rejects the key/category mismatch at the offending categoryId path.
+    expect(result.success).toBe(false)
+    expect(result.error?.issues).toContainEqual(
+      expect.objectContaining({
+        code: "custom",
+        path: ["progress", "push", "categoryId"],
+        message: "Progress key push requires categoryId push",
+      }),
+    )
+  })
+
   it("parses reps, duration, tempo reps, per-side, and terminal metric rules", () => {
     const repRule = MetricRuleSchema.safeParse({
       kind: "reps",

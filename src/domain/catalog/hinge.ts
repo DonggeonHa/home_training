@@ -95,7 +95,7 @@ export const hinge = defineCatalogCategory({
     {
       level: 3,
       name: "3초 하강 RDL",
-      targetLabel: "12~15회 × 3세트 · 3초 하강",
+      targetLabel: "3초 하강 × 12~15회 × 3세트",
       metricRule: {
         kind: "tempoReps",
         min: 12,

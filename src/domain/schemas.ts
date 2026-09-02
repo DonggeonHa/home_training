@@ -144,6 +144,43 @@ const CategoryProgressSchema = z
   })
   .strict()
 
+export const CategoryProgressByIdSchema = z
+  .object({
+    push: CategoryProgressSchema,
+    pull: CategoryProgressSchema,
+    squat: CategoryProgressSchema,
+    hinge: CategoryProgressSchema,
+    verticalPush: CategoryProgressSchema,
+    core: CategoryProgressSchema,
+  })
+  .strict()
+  .superRefine((progress, context) => {
+    addProgressCategoryIssue({ context, key: "push", categoryId: progress.push.categoryId })
+    addProgressCategoryIssue({ context, key: "pull", categoryId: progress.pull.categoryId })
+    addProgressCategoryIssue({ context, key: "squat", categoryId: progress.squat.categoryId })
+    addProgressCategoryIssue({ context, key: "hinge", categoryId: progress.hinge.categoryId })
+    addProgressCategoryIssue({
+      context,
+      key: "verticalPush",
+      categoryId: progress.verticalPush.categoryId,
+    })
+    addProgressCategoryIssue({ context, key: "core", categoryId: progress.core.categoryId })
+  })
+
+function addProgressCategoryIssue(input: {
+  readonly context: z.RefinementCtx
+  readonly key: string
+  readonly categoryId: string
+}): void {
+  if (input.categoryId !== input.key) {
+    input.context.addIssue({
+      code: "custom",
+      path: [input.key, "categoryId"],
+      message: `Progress key ${input.key} requires categoryId ${input.key}`,
+    })
+  }
+}
+
 export const SessionEntrySchema = z
   .object({
     categoryId: CategoryIdSchema,
@@ -201,16 +238,7 @@ export const AppStateSchema: z.ZodType<AppState> = z
     schemaVersion: z.literal(SCHEMA_VERSION),
     safety: SafetyClearanceSchema,
     nextRoutine: z.union([z.literal("A"), z.literal("B"), z.literal("C")]),
-    progress: z
-      .object({
-        push: CategoryProgressSchema,
-        pull: CategoryProgressSchema,
-        squat: CategoryProgressSchema,
-        hinge: CategoryProgressSchema,
-        verticalPush: CategoryProgressSchema,
-        core: CategoryProgressSchema,
-      })
-      .strict(),
+    progress: CategoryProgressByIdSchema,
     completedSessions: z.array(CompletedSessionSchema).readonly(),
   })
   .strict()

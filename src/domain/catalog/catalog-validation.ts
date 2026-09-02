@@ -125,6 +125,13 @@ function validateLevels(
     }
     seenLevels.add(level.level)
 
+    if (level.level < 0 || level.level >= EXPECTED_LEVEL_COUNTS[category.id]) {
+      return {
+        kind: "invalid",
+        error: { kind: "out-of-range-level", categoryId: category.id, level: level.level },
+      }
+    }
+
     const levelResult = validateLevel(category, level, levelKeyOwners)
     if (levelResult.kind === "invalid") {
       return levelResult
