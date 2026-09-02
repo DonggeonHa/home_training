@@ -1,18 +1,96 @@
 import AxeBuilder from "@axe-core/playwright"
-import { expect, test } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
 
 const routeCases = [
-  { hash: "#/", heading: "운동 전 안전 확인", theme: "light" },
-  { hash: "#/", heading: "운동 전 안전 확인", theme: "dark" },
-  { hash: "#/levels", heading: "운동 전 안전 확인", theme: "light" },
-  { hash: "#/levels", heading: "운동 전 안전 확인", theme: "dark" },
-  { hash: "#/record", heading: "운동 전 안전 확인", theme: "light" },
-  { hash: "#/record", heading: "운동 전 안전 확인", theme: "dark" },
-  { hash: "#/plan", heading: "운동 전 안전 확인", theme: "light" },
-  { hash: "#/plan", heading: "운동 전 안전 확인", theme: "dark" },
-  { hash: "#/unsupported", heading: "운동 전 안전 확인", theme: "light" },
-  { hash: "#/unsupported", heading: "운동 전 안전 확인", theme: "dark" },
+  { activeLabel: "홈", finalHash: "#/", hash: "#/", heading: "운동 전 안전 확인", theme: "light" },
+  { activeLabel: "홈", finalHash: "#/", hash: "#/", heading: "운동 전 안전 확인", theme: "dark" },
+  {
+    activeLabel: "운동",
+    finalHash: "#/workout",
+    hash: "#/workout",
+    heading: "운동 전 안전 확인",
+    theme: "light",
+  },
+  {
+    activeLabel: "운동",
+    finalHash: "#/workout",
+    hash: "#/workout",
+    heading: "운동 전 안전 확인",
+    theme: "dark",
+  },
+  {
+    activeLabel: "레벨",
+    finalHash: "#/levels",
+    hash: "#/levels",
+    heading: "운동 전 안전 확인",
+    theme: "light",
+  },
+  {
+    activeLabel: "레벨",
+    finalHash: "#/levels",
+    hash: "#/levels",
+    heading: "운동 전 안전 확인",
+    theme: "dark",
+  },
+  {
+    activeLabel: "기록",
+    finalHash: "#/record",
+    hash: "#/record",
+    heading: "운동 전 안전 확인",
+    theme: "light",
+  },
+  {
+    activeLabel: "기록",
+    finalHash: "#/record",
+    hash: "#/record",
+    heading: "운동 전 안전 확인",
+    theme: "dark",
+  },
+  {
+    activeLabel: "설정",
+    finalHash: "#/settings",
+    hash: "#/settings",
+    heading: "운동 전 안전 확인",
+    theme: "light",
+  },
+  {
+    activeLabel: "설정",
+    finalHash: "#/settings",
+    hash: "#/settings",
+    heading: "운동 전 안전 확인",
+    theme: "dark",
+  },
+  {
+    activeLabel: "설정",
+    finalHash: "#/settings",
+    hash: "#/plan",
+    heading: "운동 전 안전 확인",
+    theme: "light",
+  },
+  {
+    activeLabel: "설정",
+    finalHash: "#/settings",
+    hash: "#/plan",
+    heading: "운동 전 안전 확인",
+    theme: "dark",
+  },
+  {
+    activeLabel: null,
+    finalHash: "#/unsupported",
+    hash: "#/unsupported",
+    heading: "운동 전 안전 확인",
+    theme: "light",
+  },
+  {
+    activeLabel: null,
+    finalHash: "#/unsupported",
+    hash: "#/unsupported",
+    heading: "운동 전 안전 확인",
+    theme: "dark",
+  },
 ] as const
+
+const minimumTextContrastRatio = 4.5
 
 test.describe("app shell accessibility", () => {
   for (const routeCase of routeCases) {
@@ -24,6 +102,20 @@ test.describe("app shell accessibility", () => {
       await page.goto(`/${routeCase.hash}`)
 
       await expect(page.getByRole("heading", { level: 1, name: routeCase.heading })).toBeVisible()
+      await expect(page).toHaveURL(new RegExp(`${routeCase.finalHash}$`))
+      await expect(page.locator(".app-nav-link.active")).toHaveCount(
+        routeCase.activeLabel === null ? 0 : 1,
+      )
+      if (routeCase.activeLabel !== null) {
+        const activeLink = page
+          .locator(".app-nav-link.active[aria-current='page']")
+          .filter({ hasText: routeCase.activeLabel })
+        await expect(activeLink).toBeVisible()
+        await expect(await readElementContrastRatio(activeLink)).toBeGreaterThanOrEqual(
+          minimumTextContrastRatio,
+        )
+      }
+
       const results = await new AxeBuilder({ page }).analyze()
       expect(results.violations).toEqual([])
     })
@@ -60,3 +152,61 @@ test.describe("app shell accessibility", () => {
     await expect(trigger).toBeFocused()
   })
 })
+
+async function readElementContrastRatio(locator: ReturnType<Page["locator"]>): Promise<number> {
+  const colors = await locator.evaluate((element) => {
+    const styles = window.getComputedStyle(element)
+
+    return {
+      background: styles.backgroundColor,
+      foreground: styles.color,
+    }
+  })
+
+  return contrastRatio(colors.foreground, colors.background)
+}
+
+function contrastRatio(foreground: string, background: string): number {
+  const foregroundLuminance = relativeLuminance(foreground)
+  const backgroundLuminance = relativeLuminance(background)
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance)
+  const darker = Math.min(foregroundLuminance, backgroundLuminance)
+
+  return (lighter + 0.05) / (darker + 0.05)
+}
+
+function relativeLuminance(color: string): number {
+  const [red, green, blue] = parseCssRgb(color)
+  const linearRed = linearize(red)
+  const linearGreen = linearize(green)
+  const linearBlue = linearize(blue)
+
+  return 0.2126 * linearRed + 0.7152 * linearGreen + 0.0722 * linearBlue
+}
+
+function parseCssRgb(color: string): readonly [number, number, number] {
+  const matches = [...color.matchAll(/[\d.]+/g)]
+  const redValue = matches[0]?.[0]
+  const greenValue = matches[1]?.[0]
+  const blueValue = matches[2]?.[0]
+
+  if (redValue === undefined || greenValue === undefined || blueValue === undefined) {
+    throw new CssColorParseError(color)
+  }
+
+  return [Number(redValue), Number(greenValue), Number(blueValue)]
+}
+
+function linearize(channel: number): number {
+  const value = channel / 255
+
+  return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+}
+
+class CssColorParseError extends Error {
+  readonly name = "CssColorParseError"
+
+  constructor(color: string) {
+    super(`Cannot parse CSS RGB color: ${color}`)
+  }
+}

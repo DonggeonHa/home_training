@@ -106,6 +106,13 @@ All spacing derives from 4px.
 - Accessibility: Korean `lang`, semantic landmarks, one h1, no icon-only unlabeled controls.
 - Motion: no automatic motion in the foundation root.
 
+### Primary Navigation
+
+- Structure: five route links in a semantic navigation landmark.
+- Active state: use --accent-primary with --accent-ink.
+- Accessibility: active link text and icon contrast must stay at AA through route redirects and state changes.
+- Motion: transform may animate for press feedback; active color and background changes are discrete so transitional frames never dip below AA.
+
 ## 6. Motion & Interaction
 
 ### Timing

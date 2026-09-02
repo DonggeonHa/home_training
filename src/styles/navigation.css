@@ -26,10 +26,7 @@
   font-weight: 600;
   line-height: 1.4;
   text-decoration: none;
-  transition:
-    color 120ms ease-out,
-    background-color 120ms ease-out,
-    transform 120ms ease-out;
+  transition: transform 120ms ease-out;
 }
 
 .app-nav-link span {
