@@ -35,6 +35,6 @@ function readPreviewPort(): number {
   }
 
   const derivedPort = 43_000 + (process.pid % 1_000)
-  process.env["PLAYWRIGHT_PREVIEW_PORT"] = String(derivedPort)
+  Object.assign(process.env, { PLAYWRIGHT_PREVIEW_PORT: String(derivedPort) })
   return derivedPort
 }

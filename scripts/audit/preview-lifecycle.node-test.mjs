@@ -70,7 +70,10 @@ test("root Playwright config derives its preview port per process or explicit en
   assert.equal(source.includes("4190"), false)
   assert.match(source, /PLAYWRIGHT_PREVIEW_PORT/)
   assert.match(source, /process\.pid/)
-  assert.match(source, /process\.env\["PLAYWRIGHT_PREVIEW_PORT"\] = String\(derivedPort\)/)
+  assert.match(
+    source,
+    /Object\.assign\(process\.env, \{ PLAYWRIGHT_PREVIEW_PORT: String\(derivedPort\) \}\)/,
+  )
 })
 
 test("preview helper runs two audit previews concurrently without sharing a port", {
