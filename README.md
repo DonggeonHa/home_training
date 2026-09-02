@@ -44,6 +44,12 @@ pnpm audit:react-scan
 pnpm audit:lighthouse
 ```
 
+To audit an already deployed GitHub Pages URL without starting a local preview:
+
+```powershell
+pnpm audit:lighthouse --url "https://donggeonha.github.io/home_training/"
+```
+
 Local preview after `pnpm build`:
 
 ```powershell
@@ -54,7 +60,7 @@ Open `http://127.0.0.1:4173/#/`.
 
 ## Branches And Deployment
 
-CI runs on pull requests plus pushes to `main` and `feature/**`. The Pages workflow runs on `main` and `workflow_dispatch`, runs the full quality suite before upload/deploy, and deploys `dist`.
+CI runs on pull requests plus pushes to `main` and `feature/**`. The Pages workflow runs on `main` and `workflow_dispatch`, runs the full quality suite before upload/deploy, deploys `dist`, and then reruns the Lighthouse real-Chrome gate against the deployed Pages URL on a clean runner.
 
 The expected GitHub Pages URL is:
 
