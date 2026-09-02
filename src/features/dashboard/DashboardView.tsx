@@ -51,15 +51,15 @@ export function DashboardView({ startHref, state }: DashboardViewProps) {
             <dl className="dashboard-facts">
               <div>
                 <dt>최근 기록</dt>
-                <dd>{`최근 기록: ${card.latestRecord}`}</dd>
+                <dd>{card.latestRecord}</dd>
               </div>
               <div>
                 <dt>같은 레벨 PR</dt>
-                <dd>{`같은 레벨 PR: ${card.sameLevelPr}`}</dd>
+                <dd>{card.sameLevelPr}</dd>
               </div>
               <div>
                 <dt>남은 조건</dt>
-                <dd>{`남은 조건: ${card.remainingCondition}`}</dd>
+                <dd>{card.remainingCondition}</dd>
               </div>
             </dl>
             <Progress

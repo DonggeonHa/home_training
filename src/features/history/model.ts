@@ -61,7 +61,10 @@ export function buildHistorySummary(state: StoredState, category: CatalogCategor
   const timeline = getLevelTimeline({ sessions: state.completedSessions, categoryId: category.id })
 
   return {
-    latest: latest.kind === "found" ? formatSets(latest.entry.sets) : "아직 없음",
+    latest:
+      latest.kind === "found"
+        ? formatSets(latest.entry.sets, latest.entry.metricRule)
+        : "아직 없음",
     levelTimeline:
       timeline.length === 0 ? "아직 없음" : timeline.map((point) => `Lv.${point.level}`).join(", "),
     sameLevelPr: pr.kind === "found" ? formatSameLevelPr(pr) : "아직 없음",

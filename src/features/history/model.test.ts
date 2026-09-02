@@ -6,6 +6,7 @@ import { buildHistorySummary, chartSeriesForFilter, entriesForFilter } from "./m
 
 const pushId = CategoryIdSchema.parse("push")
 const squatId = CategoryIdSchema.parse("squat")
+const coreId = CategoryIdSchema.parse("core")
 
 function stateWithMixedHistory(): StoredState {
   const base: StoredState = createCompletedOnboardingState()
@@ -96,6 +97,63 @@ describe("history model", () => {
     expect(emptySummary.latest).toBe("아직 없음")
     expect(emptySummary.sameLevelPr).toBe("아직 없음")
     expect(emptySummary.levelTimeline).toBe("아직 없음")
+  })
+
+  it("summarizes duration latest records in seconds", () => {
+    const base: StoredState = createCompletedOnboardingState()
+    const state = {
+      ...base,
+      progress: {
+        ...base.progress,
+        core: { categoryId: coreId, level: 1, status: "active" },
+      },
+      completedSessions: [
+        {
+          id: SessionIdSchema.parse("77777777-7777-4777-8777-777777777777"),
+          routineId: "A",
+          completedAt: "2026-09-01T09:00:00.000Z",
+          entries: [
+            {
+              categoryId: coreId,
+              level: 1,
+              exerciseName: "플랭크",
+              metricRule: {
+                kind: "duration",
+                minSeconds: 30,
+                maxSeconds: 40,
+                sets: 3,
+                laterality: "none",
+              },
+              sets: [
+                {
+                  kind: "single",
+                  value: 32,
+                  quality: { pain: false, form: "good", rom: "full" },
+                },
+                {
+                  kind: "single",
+                  value: 40,
+                  quality: { pain: false, form: "good", rom: "full" },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } satisfies StoredState
+
+    const summary = buildHistorySummary(state, {
+      id: coreId,
+      title: "CORE",
+      muscles: [],
+      warmup: [],
+      instructions: [],
+      mistakes: [],
+      stopSignals: [],
+      levels: [],
+    })
+
+    expect(summary.latest).toBe("32초 / 40초")
   })
 
   it("returns raw chart series by unit without cross-unit aggregation", () => {

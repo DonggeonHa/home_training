@@ -59,6 +59,17 @@ function populatedState() {
   } satisfies ReturnType<typeof createCompletedOnboardingState>
 }
 
+function definitionValue(card: HTMLElement, label: string): string {
+  const term = Array.from(card.querySelectorAll("dt")).find(
+    (candidate) => candidate.textContent === label,
+  )
+  const definition = term?.nextElementSibling
+
+  expect(term).not.toBeUndefined()
+  expect(definition?.tagName).toBe("DD")
+  return definition?.textContent ?? ""
+}
+
 describe("DashboardView", () => {
   it("renders next manual routine, adaptation progress, and six category cards", () => {
     render(<DashboardView state={populatedState()} startHref="#/record" />)
@@ -82,11 +93,11 @@ describe("DashboardView", () => {
     expect(within(pushCard).getByText("상태: 임시 레벨")).toBeVisible()
     expect(within(pushCard).getByText("현재 운동: 벽 푸시업")).toBeVisible()
     expect(within(pushCard).getByText("다음 운동: Lv.1 높은 인클라인 푸시업")).toBeVisible()
-    expect(within(pushCard).getByText("최근 기록: 12회")).toBeVisible()
-    expect(within(pushCard).getByText("같은 레벨 PR: 15회")).toBeVisible()
-    expect(
-      within(pushCard).getByText("남은 조건: 첫 6회 적응기 완료 후 목표 세션 2회"),
-    ).toBeVisible()
+    expect(definitionValue(pushCard, "최근 기록")).toBe("12회")
+    expect(definitionValue(pushCard, "같은 레벨 PR")).toBe("15회")
+    expect(within(pushCard).queryByText("최근 기록: 12회")).not.toBeInTheDocument()
+    expect(within(pushCard).queryByText("같은 레벨 PR: 15회")).not.toBeInTheDocument()
+    expect(definitionValue(pushCard, "남은 조건")).toBe("첫 6회 적응기 완료 후 목표 세션 2회")
   })
 
   it("renders intentional empty history copy without misleading records", () => {
@@ -94,7 +105,7 @@ describe("DashboardView", () => {
 
     const pullCard = screen.getByRole("article", { name: "PULL 카테고리 카드" })
 
-    expect(within(pullCard).getByText("최근 기록: 아직 없음")).toBeVisible()
-    expect(within(pullCard).getByText("같은 레벨 PR: 아직 없음")).toBeVisible()
+    expect(definitionValue(pullCard, "최근 기록")).toBe("아직 없음")
+    expect(definitionValue(pullCard, "같은 레벨 PR")).toBe("아직 없음")
   })
 })

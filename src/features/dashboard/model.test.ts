@@ -44,21 +44,81 @@ describe("dashboard model", () => {
 
   it("formats single, per-side, duration, load, and empty records without unit mixing", () => {
     expect(
-      formatSets([
-        { kind: "single", value: 30, quality: { pain: false, form: "good", rom: "full" } },
-      ]),
+      formatSets(
+        [{ kind: "single", value: 30, quality: { pain: false, form: "good", rom: "full" } }],
+        { kind: "reps", min: 30, max: 30, sets: 3, laterality: "none" },
+      ),
     ).toBe("30회")
     expect(
-      formatSets([
-        {
-          kind: "perSide",
-          left: 8,
-          right: 7,
-          quality: { pain: false, form: "good", rom: "full" },
-        },
-      ]),
+      formatSets(
+        [
+          {
+            kind: "perSide",
+            left: 8,
+            right: 7,
+            quality: { pain: false, form: "good", rom: "full" },
+          },
+        ],
+        { kind: "tempoReps", min: 8, max: 8, tempoSeconds: 3, sets: 3, laterality: "perSide" },
+      ),
     ).toBe("좌 8회 / 우 7회")
-    expect(formatSets([])).toBe("기록 없음")
+    expect(
+      formatSets(
+        [{ kind: "single", value: 32, quality: { pain: false, form: "good", rom: "full" } }],
+        { kind: "duration", minSeconds: 30, maxSeconds: 40, sets: 3, laterality: "none" },
+      ),
+    ).toBe("32초")
+    expect(formatSets([], { kind: "reps", min: 30, max: 30, sets: 3, laterality: "none" })).toBe(
+      "기록 없음",
+    )
+  })
+
+  it("formats latest dashboard records with the entry metric rule", () => {
+    const base: StoredState = createCompletedOnboardingState()
+    const state = {
+      ...base,
+      progress: {
+        ...base.progress,
+        core: { categoryId: coreId, level: 1, status: "active" },
+      },
+      completedSessions: [
+        {
+          id: sessionId,
+          routineId: "A",
+          completedAt: "2026-09-01T09:00:00.000Z",
+          entries: [
+            {
+              categoryId: coreId,
+              level: 1,
+              exerciseName: "플랭크",
+              metricRule: {
+                kind: "duration",
+                minSeconds: 30,
+                maxSeconds: 40,
+                sets: 3,
+                laterality: "none",
+              },
+              sets: [
+                {
+                  kind: "single",
+                  value: 32,
+                  quality: { pain: false, form: "good", rom: "full" },
+                },
+                {
+                  kind: "single",
+                  value: 40,
+                  quality: { pain: false, form: "good", rom: "full" },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } satisfies StoredState
+
+    const coreCard = buildDashboardCards(state).find((card) => card.category.id === coreId)
+
+    expect(coreCard?.latestRecord).toBe("32초 / 40초")
   })
 
   it("formats dashboard PRs for seconds, per-side, load-only, and empty terminal records", () => {

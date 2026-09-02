@@ -1,6 +1,7 @@
 import { currentCategoryKey } from "../../app/store/selectors"
+import { assertNever } from "../../domain/assert-never"
 import { type CatalogCategory, EXERCISE_CATALOG } from "../../domain/catalog"
-import type { ProgressStatus, SetRecord } from "../../domain/contracts"
+import type { MetricRule, ProgressStatus, SetRecord } from "../../domain/contracts"
 import { getLatestEntry, getSameLevelPr } from "../../domain/history/history"
 import type { StoredState } from "../../storage"
 
@@ -42,7 +43,10 @@ export function buildDashboardCard(
     statusLabel: statusLabel(progress.status),
     currentExercise: currentLevel?.name ?? "레벨 확인 필요",
     nextExercise: nextLevel === undefined ? "최종 목표" : `Lv.${nextLevel.level} ${nextLevel.name}`,
-    latestRecord: latest.kind === "found" ? formatSets(latest.entry.sets) : "아직 없음",
+    latestRecord:
+      latest.kind === "found"
+        ? formatSets(latest.entry.sets, latest.entry.metricRule)
+        : "아직 없음",
     sameLevelPr: pr.kind === "found" ? formatPr(pr) : "아직 없음",
     remainingCondition: remainingCondition(
       progress.status,
@@ -82,19 +86,32 @@ function remainingCondition(status: ProgressStatus, qualifiedCount: number): str
   }
 }
 
-export function formatSets(sets: readonly SetRecord[]): string {
+export function formatSets(sets: readonly SetRecord[], metricRule: MetricRule): string {
   if (sets.length === 0) {
     return "기록 없음"
   }
-  return sets.map(formatSet).join(" / ")
+  return sets.map((set) => formatSet(set, metricRule)).join(" / ")
 }
 
-function formatSet(set: SetRecord): string {
+function formatSet(set: SetRecord, metricRule: MetricRule): string {
   switch (set.kind) {
     case "single":
-      return `${set.value}회`
+      return `${set.value}${setUnit(metricRule)}`
     case "perSide":
       return `좌 ${set.left}회 / 우 ${set.right}회`
+  }
+}
+
+function setUnit(metricRule: MetricRule): "초" | "회" {
+  switch (metricRule.kind) {
+    case "duration":
+      return "초"
+    case "reps":
+    case "tempoReps":
+    case "terminal":
+      return "회"
+    default:
+      return assertNever(metricRule)
   }
 }
 

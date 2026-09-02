@@ -198,7 +198,13 @@ describe("SettingsView", () => {
       />,
     )
 
-    await userEvent.upload(screen.getByLabelText("백업 파일 선택"), fileWithContent("{}"))
+    const file = fileWithContent("{}")
+    Object.defineProperty(file, "text", {
+      configurable: true,
+      value: undefined,
+    })
+
+    await userEvent.upload(screen.getByLabelText("백업 파일 선택"), file)
 
     expect(await screen.findByText("가져오기 파일을 읽을 수 없습니다.")).toBeVisible()
     expect(screen.queryByLabelText("복원 미리보기")).not.toBeInTheDocument()

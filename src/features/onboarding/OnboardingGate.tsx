@@ -22,7 +22,12 @@ export function OnboardingGate({ children }: OnboardingGateProps) {
   const assessmentStep = selectAssessmentStep(state)
 
   if (selectCanUseDashboard(state)) {
-    return <>{children}</>
+    return (
+      <>
+        <PersistenceNotices />
+        {children}
+      </>
+    )
   }
 
   return (

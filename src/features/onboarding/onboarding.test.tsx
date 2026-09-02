@@ -2,16 +2,34 @@ import { cleanup, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { App } from "../../App"
+import { AppStoreProvider, useAppStore } from "../../app/store/provider"
 import { APP_STORAGE_KEY } from "../../storage"
 import { MemoryStoragePort } from "../../storage/test-ports"
 import { createCompletedOnboardingState } from "../../test/onboarding-fixtures"
 import { renderInStaticShell } from "../../test/static-shell"
+import { OnboardingGate } from "./OnboardingGate"
 import { SafetyOnboarding } from "./SafetyOnboarding"
 
 function renderApp(storage: MemoryStoragePort) {
   window.location.hash = "/"
 
   return renderInStaticShell(<App storage={storage} />)
+}
+
+function SaveFailureAfterUnlockHarness() {
+  const { actions } = useAppStore()
+
+  return (
+    <OnboardingGate>
+      <h1>대시보드 사용 가능</h1>
+      <button
+        type="button"
+        onClick={() => actions.replaceStoredState(createCompletedOnboardingState())}
+      >
+        저장 실패 만들기
+      </button>
+    </OnboardingGate>
+  )
 }
 
 describe("safety onboarding", () => {
@@ -113,6 +131,25 @@ describe("safety onboarding", () => {
     expect(
       screen.queryByRole("heading", { level: 1, name: "운동 전 안전 확인" }),
     ).not.toBeInTheDocument()
+  })
+
+  it("keeps save failure notices visible after the dashboard is unlocked", async () => {
+    const storage = new MemoryStoragePort()
+    storage.values.set(APP_STORAGE_KEY, JSON.stringify(createCompletedOnboardingState()))
+    storage.writeError = new DOMException("full", "QuotaExceededError")
+
+    renderInStaticShell(
+      <AppStoreProvider storage={storage}>
+        <SaveFailureAfterUnlockHarness />
+      </AppStoreProvider>,
+    )
+
+    expect(screen.getByRole("heading", { level: 1, name: "대시보드 사용 가능" })).toBeVisible()
+
+    await userEvent.click(screen.getByRole("button", { name: "저장 실패 만들기" }))
+
+    expect(screen.getByRole("heading", { level: 2, name: "저장에 실패했습니다" })).toBeVisible()
+    expect(screen.getByRole("heading", { level: 1, name: "대시보드 사용 가능" })).toBeVisible()
   })
 
   it("shows non-urgent blocked guidance without emergency copy", async () => {

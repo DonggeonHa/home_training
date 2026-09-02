@@ -55,19 +55,19 @@ export function SkillTreeView({ selectedCategoryId, state }: SkillTreeViewProps)
                 <dl className="skill-tree-details">
                   <div>
                     <dt>목표</dt>
-                    <dd>{`목표: ${item.level.targetLabel}`}</dd>
+                    <dd>{item.level.targetLabel}</dd>
                   </div>
                   <div>
                     <dt>장비</dt>
-                    <dd>{`장비: ${item.level.equipment.join(", ")}`}</dd>
+                    <dd>{item.level.equipment.join(", ")}</dd>
                   </div>
                   <div>
                     <dt>회귀</dt>
-                    <dd>{`회귀: ${item.level.regressions.join(", ")}`}</dd>
+                    <dd>{item.level.regressions.join(", ")}</dd>
                   </div>
                   <div>
                     <dt>안전</dt>
-                    <dd>{`안전: ${item.level.safety.join(", ")}`}</dd>
+                    <dd>{item.level.safety.join(", ")}</dd>
                   </div>
                 </dl>
               </li>
