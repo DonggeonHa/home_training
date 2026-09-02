@@ -1,25 +1,15 @@
-import { spawnSync } from "node:child_process"
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { createRequire } from "node:module"
 import { join } from "node:path"
 import { chromium } from "playwright"
 import { withPreviewServer } from "./preview-server.mjs"
+import { bundleReactScanLite } from "./react-scan-bundle.mjs"
 
 const evidenceRoot = join(".omo", "evidence", "home-training", "task-12")
 const bundlePath = join(evidenceRoot, "react-scan-lite.js")
 const reportPath = join(evidenceRoot, "react-scan-lite-report.json")
-const require = createRequire(import.meta.url)
 
 mkdirSync(evidenceRoot, { recursive: true })
-run(process.execPath, [
-  require.resolve("esbuild/bin/esbuild"),
-  "react-scan/lite",
-  "--bundle",
-  "--format=iife",
-  "--global-name=ReactScanLite",
-  "--platform=browser",
-  `--outfile=${bundlePath}`,
-])
+await bundleReactScanLite(bundlePath)
 
 await withPreviewServer(async (preview) => {
   const report = await runReactScanAudit(preview.url)
@@ -34,16 +24,6 @@ await withPreviewServer(async (preview) => {
     `react-scan/lite gate passed: ${report.commitEventCount} commits, 0 unnecessary; report ${reportPath}`,
   )
 })
-
-function run(command, args) {
-  const result = spawnSync(command, args, {
-    encoding: "utf8",
-    stdio: "inherit",
-  })
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1)
-  }
-}
 
 async function runReactScanAudit(previewUrl) {
   const bundleSource = readFileSync(bundlePath, "utf8")
