@@ -121,8 +121,7 @@
 }
 
 .workout-sticky {
-  position: sticky;
-  bottom: var(--space-4);
+  position: static;
   padding: var(--space-3);
   border: 1px solid var(--border-default);
   border-radius: var(--space-2);
@@ -140,7 +139,7 @@
   position: fixed;
   z-index: 3;
   right: var(--space-4);
-  bottom: var(--space-4);
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   left: var(--space-4);
   border-color: var(--status-error);
 }

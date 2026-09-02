@@ -19,8 +19,9 @@
 
 .dashboard-hero h1 {
   margin-block: var(--space-2);
-  font-size: 2rem;
+  font-size: 1.75rem;
   line-height: 1.15;
+  word-break: keep-all;
 }
 
 .dashboard-hero p,
