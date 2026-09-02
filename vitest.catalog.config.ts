@@ -9,6 +9,7 @@ export default defineConfig({
     coverage: {
       include: [
         "src/domain/catalog/catalog.ts",
+        "src/domain/catalog/catalog-gate-validation.ts",
         "src/domain/catalog/catalog-validation.ts",
         "src/domain/catalog/catalog-types.ts",
         "src/domain/catalog/index.ts",

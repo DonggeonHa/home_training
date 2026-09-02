@@ -1,5 +1,9 @@
-import { assertNever } from "../assert-never"
 import { CATEGORY_IDS } from "../contracts"
+import {
+  hasNonTerminalFreeHspu,
+  TERMINAL_LEVEL,
+  validateLevelGate,
+} from "./catalog-gate-validation"
 import type {
   CatalogValidationCategory,
   CatalogValidationLevel,
@@ -17,12 +21,6 @@ const EXPECTED_LEVEL_COUNTS = {
   verticalPush: 9,
   core: 8,
 } as const satisfies Record<ExpectedCategoryId, number>
-
-const TERMINAL_LEVEL = {
-  categoryId: "verticalPush",
-  level: 8,
-  name: "프리 HSPU",
-} as const
 
 export function validateCatalog(
   catalog: readonly CatalogValidationCategory[],
@@ -152,7 +150,7 @@ function validateLevel(
     return structuralResult
   }
 
-  return validateGate(category.id, level)
+  return validateLevelGate(category.id, level)
 }
 
 function validateLevelStructure(
@@ -197,66 +195,6 @@ function validateLevelStructure(
   return { kind: "valid" }
 }
 
-function validateGate(categoryId: string, level: CatalogValidationLevel): CatalogValidationResult {
-  switch (level.metricRule.kind) {
-    case "reps":
-      if (level.metricRule.sets !== 3) {
-        return {
-          kind: "invalid",
-          error: { kind: "invalid-set-count", categoryId, level: level.level },
-        }
-      }
-      if (level.metricRule.rir === undefined) {
-        return {
-          kind: "invalid",
-          error: { kind: "missing-computable-gate", categoryId, level: level.level },
-        }
-      }
-      return { kind: "valid" }
-    case "duration":
-    case "tempoReps":
-      if (level.metricRule.sets !== 3) {
-        return {
-          kind: "invalid",
-          error: { kind: "invalid-set-count", categoryId, level: level.level },
-        }
-      }
-      return { kind: "valid" }
-    case "terminal":
-      return validateTerminalLevel(categoryId, level)
-    case "unknownMetricRule":
-      return {
-        kind: "invalid",
-        error: { kind: "unknown-metric-rule", categoryId, level: level.level },
-      }
-    default:
-      return assertNever(level.metricRule)
-  }
-}
-
-function validateTerminalLevel(
-  categoryId: string,
-  level: CatalogValidationLevel,
-): CatalogValidationResult {
-  if (
-    categoryId !== TERMINAL_LEVEL.categoryId ||
-    level.level !== TERMINAL_LEVEL.level ||
-    level.name !== TERMINAL_LEVEL.name
-  ) {
-    return {
-      kind: "invalid",
-      error: { kind: "unexpected-terminal", categoryId, level: level.level },
-    }
-  }
-  if (level.promotable) {
-    return {
-      kind: "invalid",
-      error: { kind: "terminal-promotable", categoryId, level: level.level },
-    }
-  }
-  return { kind: "valid" }
-}
-
 function isExpectedCategoryId(id: string): id is ExpectedCategoryId {
   return CATEGORY_IDS.some((categoryId) => categoryId === id)
 }
@@ -265,17 +203,4 @@ function isExpectedCatalogCategory(
   category: CatalogValidationCategory,
 ): category is ExpectedCatalogCategory {
   return isExpectedCategoryId(category.id)
-}
-
-function hasNonTerminalFreeHspu(catalog: readonly ExpectedCatalogCategory[]): boolean {
-  return catalog.some(
-    (category) =>
-      category.id === TERMINAL_LEVEL.categoryId &&
-      category.levels.some(
-        (level) =>
-          level.level === TERMINAL_LEVEL.level &&
-          level.name === TERMINAL_LEVEL.name &&
-          level.metricRule.kind !== "terminal",
-      ),
-  )
 }
