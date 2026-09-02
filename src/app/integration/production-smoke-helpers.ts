@@ -135,6 +135,88 @@ export async function findHorizontalOverflow(page: Page) {
   })
 }
 
+export async function findMainContentNavIntersections(page: Page) {
+  return page.evaluate(() => {
+    const main = document.querySelector<HTMLElement>("#main-content")
+    const nav = document.querySelector<HTMLElement>(".app-nav")
+    if (main === null || nav === null) {
+      throw new Error("Expected main content and app navigation to exist")
+    }
+
+    const navRect = nav.getBoundingClientRect()
+    const mainRect = main.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+    const viewportWidth = window.innerWidth
+
+    return [
+      ...main.querySelectorAll<HTMLElement>(
+        [
+          "h1",
+          "h2",
+          "h3",
+          "p",
+          "a",
+          "button",
+          "li",
+          "dt",
+          "dd",
+          ".dashboard-card",
+          ".ui-card",
+          ".workout-sticky",
+        ].join(","),
+      ),
+    ]
+      .map((element) => {
+        const rect = element.getBoundingClientRect()
+        const visibleRect = {
+          bottom: Math.min(rect.bottom, mainRect.bottom, viewportHeight),
+          left: Math.max(rect.left, mainRect.left, 0),
+          right: Math.min(rect.right, mainRect.right, viewportWidth),
+          top: Math.max(rect.top, mainRect.top, 0),
+        }
+
+        return {
+          bottom: Math.round(visibleRect.bottom),
+          className: element.className.toString(),
+          left: Math.round(visibleRect.left),
+          right: Math.round(visibleRect.right),
+          tagName: element.tagName.toLowerCase(),
+          text: element.textContent?.trim().replace(/\s+/g, " ").slice(0, 80) ?? "",
+          top: Math.round(visibleRect.top),
+        }
+      })
+      .filter(
+        (box) =>
+          box.right > box.left &&
+          box.bottom > box.top &&
+          box.right > 0 &&
+          box.left < viewportWidth &&
+          box.bottom > 0 &&
+          box.top < viewportHeight &&
+          box.right > navRect.left &&
+          box.left < navRect.right &&
+          box.bottom > navRect.top &&
+          box.top < navRect.bottom,
+      )
+  })
+}
+
+export async function scrollMainContent(page: Page, position: "bottom" | "middle" | "top") {
+  await page.evaluate((scrollPosition) => {
+    const main = document.querySelector<HTMLElement>("#main-content")
+    const documentScroller = document.scrollingElement
+    const scroller =
+      main !== null && main.scrollHeight > main.clientHeight + 1 ? main : documentScroller
+    if (scroller === null) {
+      throw new Error("Expected a scrollable page or main region")
+    }
+
+    const scrollRatio = scrollPosition === "bottom" ? 1 : scrollPosition === "middle" ? 0.5 : 0
+    scroller.scrollTo({ top: (scroller.scrollHeight - scroller.clientHeight) * scrollRatio })
+  }, position)
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)))
+}
+
 export async function stopCurrentCategoryByPain(
   page: Page,
   inputName: string,

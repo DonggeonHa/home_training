@@ -47,13 +47,16 @@ describe("App root", () => {
     renderAppAtHash("/")
 
     const skipLink = screen.getByRole("link", { name: "본문으로 건너뛰기" })
+    const main = screen.getByRole("main")
     await userEvent.tab()
 
     expect(skipLink).toHaveFocus()
     expect(skipLink).toHaveAttribute("href", "#main-content")
     expect(screen.getByRole("banner")).toBeVisible()
     expect(screen.getByRole("navigation", { name: "주요 메뉴" })).toBeVisible()
-    expect(screen.getByRole("main")).toHaveAttribute("id", "main-content")
+    expect(main).toHaveAttribute("id", "main-content")
+    expect(main).toHaveClass("app-main")
+    expect(main).toHaveAttribute("tabindex", "0")
   })
 
   it("opens the safety principles dialog from the shell and restores trigger focus", async () => {
@@ -82,7 +85,7 @@ describe("App root", () => {
     expect(HTMLDialogElement.prototype.close).toHaveBeenCalledOnce()
   })
 
-  it("focuses the main landmark when the skip link activates", async () => {
+  it("focuses the keyboard-scrollable main landmark when the skip link activates", async () => {
     renderAppAtHash("/")
 
     const user = userEvent.setup()
@@ -92,7 +95,9 @@ describe("App root", () => {
 
     await user.click(skipLink)
 
-    expect(main).toHaveAttribute("tabindex", "-1")
+    expect(skipLink).toHaveAttribute("href", "#main-content")
+    expect(main).toHaveClass("app-main")
+    expect(main).toHaveAttribute("tabindex", "0")
     expect(main).toHaveFocus()
     expect(window.location.hash).toBe(originalHash)
     expect(screen.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()

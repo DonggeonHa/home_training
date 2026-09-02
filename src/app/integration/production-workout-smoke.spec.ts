@@ -6,7 +6,9 @@ import {
   createStateWithCompletedSession,
   evidenceDirectory,
   findHorizontalOverflow,
+  findMainContentNavIntersections,
   readStoredState,
+  scrollMainContent,
   seedCompletedState,
   stopCurrentCategoryByPain,
 } from "./production-smoke-helpers"
@@ -64,7 +66,7 @@ test.describe("production workout smoke", () => {
     await page.setViewportSize({ height: 812, width: 375 })
     await seedCompletedState(page, createCompletedOnboardingState(), "dark")
     await page.goto("/#/workout")
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    await scrollMainContent(page, "bottom")
 
     const footerBox = await page.locator(".workout-sticky").boundingBox()
     const navBox = await page.locator(".app-nav").boundingBox()
@@ -74,6 +76,7 @@ test.describe("production workout smoke", () => {
     expect(Math.round(footerBox?.y ?? 0) + Math.round(footerBox?.height ?? 0)).toBeLessThanOrEqual(
       Math.round(navBox?.y ?? 0),
     )
+    expect(await findMainContentNavIntersections(page)).toEqual([])
     await expect.poll(() => findHorizontalOverflow(page)).toEqual([])
     await page.screenshot({
       fullPage: true,

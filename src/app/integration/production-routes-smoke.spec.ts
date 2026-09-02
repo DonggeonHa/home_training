@@ -7,6 +7,8 @@ import {
   EXERCISE_CATALOG,
   evidenceDirectory,
   findHorizontalOverflow,
+  findMainContentNavIntersections,
+  scrollMainContent,
   seedCompletedState,
   themes,
   viewports,
@@ -72,6 +74,26 @@ test.describe("production route smoke", () => {
       }
     }
   }
+
+  test("keeps dashboard content out of the mobile navigation space while scrolling", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 812, width: 375 })
+    await seedCompletedState(page, createCompletedOnboardingState(), "dark")
+    await page.goto("/#/")
+    await expect(
+      page.getByRole("heading", { level: 1, name: "오늘의 진행 대시보드" }),
+    ).toBeVisible()
+
+    for (const scrollPosition of ["top", "middle", "bottom"] as const) {
+      await scrollMainContent(page, scrollPosition)
+      expect(await findMainContentNavIntersections(page)).toEqual([])
+      await page.screenshot({
+        fullPage: true,
+        path: `${evidenceDirectory}/dashboard-mobile-nav-clear-${scrollPosition}.png`,
+      })
+    }
+  })
 
   test("renders every category skill tree from a schema-validated seeded state", async ({
     page,

@@ -87,7 +87,8 @@ function AppShell({ downloads }: { readonly downloads: DownloadPort }) {
           </div>
         </header>
         <PrimaryNavigation />
-        <main id="main-content" className="app-main" tabIndex={-1}>
+        {/* biome-ignore lint/a11y/noNoninteractiveTabindex: main owns the mobile scroll region, so Safari keyboard users need direct focus access. */}
+        <main id="main-content" className="app-main" tabIndex={0}>
           <AppRoutes downloads={downloads} onWorkoutCompleted={setWorkoutStatus} />
         </main>
         <p className="sr-only" role="status">

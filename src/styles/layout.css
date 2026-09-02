@@ -8,8 +8,10 @@
   );
 
   display: grid;
+  height: 100dvh;
   min-height: 100dvh;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
   background: var(--surface-primary);
   color: var(--text-primary);
 }
@@ -95,15 +97,16 @@
 }
 
 .app-nav {
-  position: fixed;
-  right: var(--space-4);
-  bottom: calc(var(--app-nav-safe-gap) + env(safe-area-inset-bottom, 0px));
-  left: var(--space-4);
+  position: static;
   z-index: 1;
+  grid-row: 3;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  width: min(100% - var(--space-8), 1184px);
   gap: var(--space-1);
-  padding: var(--space-2);
+  margin-inline: auto;
+  margin-block-end: var(--app-nav-safe-gap);
+  padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
   border: 1px solid var(--border-default);
   border-radius: var(--space-2);
   background: var(--surface-elevated);
@@ -143,9 +146,12 @@
 }
 
 .app-main {
+  grid-row: 2;
   display: grid;
+  min-height: 0;
   align-items: center;
-  padding-block: var(--space-6) calc(var(--space-16) + var(--app-bottom-safe-padding));
+  overflow-y: auto;
+  padding-block: var(--space-6) var(--space-16);
 }
 
 .app-main:focus-visible {
@@ -231,8 +237,10 @@
 
 @media (min-width: 1024px) {
   .app-shell {
+    height: auto;
     grid-template-columns: 104px 1fr;
     grid-template-rows: auto 1fr;
+    overflow: visible;
   }
 
   .app-header {
@@ -248,7 +256,10 @@
     left: auto;
     grid-row: 1 / span 2;
     grid-template-columns: 1fr;
+    width: auto;
     align-self: stretch;
+    margin-block-end: 0;
+    margin-inline: 0;
     padding: var(--space-4);
     border-block: 0;
     border-left: 0;
@@ -262,6 +273,8 @@
 
   .app-main {
     grid-column: 2;
+    grid-row: 2;
+    overflow-y: visible;
     padding-block: var(--space-8) var(--space-16);
   }
 }
