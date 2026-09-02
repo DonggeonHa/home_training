@@ -1,6 +1,6 @@
 import { Moon } from "@phosphor-icons/react/Moon"
 import { Sun } from "@phosphor-icons/react/Sun"
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { AppRoutes, PrimaryNavigation } from "./app/routes"
 import { AppStoreProvider, useAppStore } from "./app/store/provider"
@@ -11,9 +11,22 @@ import { BrowserDownloadPort, type DownloadPort } from "./storage/ports"
 import "./styles/layout.css"
 import "./styles/ui.css"
 
+const skipLinksWithMainFocus = new WeakSet<HTMLAnchorElement>()
+let pendingMainFocusObserver: MutationObserver | undefined
+
 type AppProps = {
   readonly downloads?: DownloadPort | undefined
   readonly storage?: StoragePort | undefined
+}
+
+export function installMainSkipLink(): void {
+  const skipLink = document.querySelector<HTMLAnchorElement>("body > a.skip-link")
+  if (skipLink === null || skipLinksWithMainFocus.has(skipLink)) {
+    return
+  }
+
+  skipLink.addEventListener("click", focusMainFromSkipLink)
+  skipLinksWithMainFocus.add(skipLink)
 }
 
 export function App({ downloads, storage }: AppProps) {
@@ -22,6 +35,39 @@ export function App({ downloads, storage }: AppProps) {
       <AppShell downloads={downloads ?? new BrowserDownloadPort()} />
     </AppStoreProvider>
   )
+}
+
+function focusMainFromSkipLink(event: Event): void {
+  event.preventDefault()
+  focusMainLandmark()
+}
+
+function focusMainLandmark(): void {
+  const main = document.querySelector<HTMLElement>("#main-content")
+  if (main !== null) {
+    main.focus()
+    return
+  }
+
+  if (pendingMainFocusObserver !== undefined) {
+    return
+  }
+
+  const root = document.getElementById("root") ?? document.body
+  const observer = new MutationObserver(() => {
+    const mountedMain = document.querySelector<HTMLElement>("#main-content")
+    if (mountedMain === null) {
+      return
+    }
+
+    observer.disconnect()
+    if (pendingMainFocusObserver === observer) {
+      pendingMainFocusObserver = undefined
+    }
+    mountedMain.focus()
+  })
+  pendingMainFocusObserver = observer
+  observer.observe(root, { childList: true, subtree: true })
 }
 
 function AppShell({ downloads }: { readonly downloads: DownloadPort }) {
@@ -123,15 +169,5 @@ function useAppHostAttributes(resolvedTheme: "light" | "dark", motionClass: stri
 }
 
 function useMainSkipLink(): void {
-  useEffect(() => {
-    const skipLink = document.querySelector<HTMLAnchorElement>(".skip-link")
-    const focusMain = (event: MouseEvent) => {
-      event.preventDefault()
-      document.querySelector<HTMLElement>("#main-content")?.focus()
-    }
-
-    skipLink?.addEventListener("click", focusMain)
-
-    return () => skipLink?.removeEventListener("click", focusMain)
-  }, [])
+  useLayoutEffect(() => installMainSkipLink(), [])
 }

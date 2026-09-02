@@ -1,6 +1,6 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { App } from "./App"
+import { App, installMainSkipLink } from "./App"
 import "./styles/tokens.css"
 
 if (import.meta.env.DEV && import.meta.env.VITE_DISABLE_REACT_DEVTOOLS !== "1") {
@@ -16,6 +16,8 @@ const rootElement = document.getElementById("root")
 if (rootElement === null) {
   throw new Error("Application root element was not found")
 }
+
+installMainSkipLink()
 
 createRoot(rootElement).render(
   <StrictMode>

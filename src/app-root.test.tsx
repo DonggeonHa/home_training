@@ -1,7 +1,7 @@
-import { cleanup, screen, within } from "@testing-library/react"
+import { cleanup, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { App } from "./App"
+import { App, installMainSkipLink } from "./App"
 import { APP_STORAGE_KEY } from "./storage"
 import { MemoryStoragePort } from "./storage/test-ports"
 import { createCompletedOnboardingState } from "./test/onboarding-fixtures"
@@ -93,6 +93,46 @@ describe("App root", () => {
     expect(main).toHaveFocus()
     expect(window.location.hash).toBe(originalHash)
     expect(screen.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
+  })
+
+  it("preserves the current route hash when the static skip link activates before main mounts", async () => {
+    // Given: the static shell skip link is interactive before React has mounted the main landmark.
+    window.location.hash = "#/levels"
+    document.body.innerHTML =
+      '<a class="skip-link" href="#main-content">본문으로 건너뛰기</a><div id="root"></div>'
+    installMainSkipLink()
+    const skipLink = screen.getByRole("link", { name: "본문으로 건너뛰기" })
+
+    // When: the user activates the first-focusable skip link early.
+    const event = new MouseEvent("click", { bubbles: true, cancelable: true })
+    const defaultWasAllowed = skipLink.dispatchEvent(event)
+
+    // Then: native anchor navigation is cancelled, and focus moves once main becomes available.
+    expect(defaultWasAllowed).toBe(false)
+    expect(window.location.hash).toBe("#/levels")
+
+    const main = document.createElement("main")
+    main.id = "main-content"
+    main.tabIndex = 0
+    document.getElementById("root")?.append(main)
+
+    await waitFor(() => expect(main).toHaveFocus())
+    expect(window.location.hash).toBe("#/levels")
+  })
+
+  it("installs only one static skip link listener on repeated setup", () => {
+    // Given: the static shell skip link exists before the React tree mounts.
+    document.body.innerHTML =
+      '<a class="skip-link" href="#main-content">본문으로 건너뛰기</a><main id="main-content" tabindex="0"></main>'
+    const skipLink = screen.getByRole("link", { name: "본문으로 건너뛰기" })
+    const addEventListener = vi.spyOn(skipLink, "addEventListener")
+
+    // When: both bootstrap and React setup attempt to install the handler.
+    installMainSkipLink()
+    installMainSkipLink()
+
+    // Then: the same DOM node receives only one skip-link listener.
+    expect(addEventListener).toHaveBeenCalledOnce()
   })
 
   it("keeps every normal route behind the global first-run onboarding gate", () => {

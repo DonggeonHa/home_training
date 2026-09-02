@@ -133,6 +133,22 @@ test.describe("app shell accessibility", () => {
     await expect(page.getByRole("heading", { level: 1, name: "운동 전 안전 확인" })).toBeVisible()
   })
 
+  test("preserves route hashes across repeated static skip link activations", async ({ page }) => {
+    const hashes = ["#/", "#/levels", "#/levels/push", "#/settings"] as const
+    for (const [hashIndex, hash] of hashes.entries()) {
+      for (let attempt = 1; attempt <= 5; attempt += 1) {
+        await page.goto(`/?skip=${hashIndex}-${attempt}${hash}`)
+        await page.keyboard.press("Tab")
+        await expect(page.getByRole("link", { name: "본문으로 건너뛰기" })).toBeFocused()
+
+        await page.keyboard.press("Enter")
+
+        await expect(page.getByRole("main")).toBeFocused()
+        await expect(page).toHaveURL(new RegExp(`${hash.replaceAll("/", "\\/")}$`))
+      }
+    }
+  })
+
   test("opens the safety principles dialog as a modal and restores focus", async ({ page }) => {
     await page.goto("/#/")
     const trigger = page.getByRole("button", { name: "안전 원칙" })
