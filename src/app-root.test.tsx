@@ -1,10 +1,11 @@
-import { cleanup, render, screen, within } from "@testing-library/react"
+import { cleanup, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { App } from "./App"
 import { APP_STORAGE_KEY } from "./storage"
 import { MemoryStoragePort } from "./storage/test-ports"
 import { createCompletedOnboardingState } from "./test/onboarding-fixtures"
+import { renderInStaticShell } from "./test/static-shell"
 
 const originalShowModal = HTMLDialogElement.prototype.showModal
 const originalClose = HTMLDialogElement.prototype.close
@@ -18,7 +19,7 @@ function createCompletedOnboardingStorage() {
 function renderAppAtHash(path: string, storage = new MemoryStoragePort()) {
   window.location.hash = path
 
-  return render(<App storage={storage} />)
+  return renderInStaticShell(<App storage={storage} />)
 }
 
 describe("App root", () => {

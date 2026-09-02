@@ -43,7 +43,29 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <a class="skip-link" href="#main-content">본문으로 건너뛰기</a>
+    <div id="app-host" class="app-shell" data-testid="app-shell">
+      <header class="app-header">
+        <div class="app-brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 256 256" focusable="false">
+              <title>바벨</title>
+              <path
+                d="M48 120h160v48H48zM16 96h32v96H16zM208 96h32v96h-32zM80 72h96v32H80z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
+          <div class="brand-copy">
+            <p class="eyebrow">LOCAL TRAINING SYSTEM</p>
+            <h1 class="brand-title">홈트레이닝 LEVEL UP</h1>
+            <p class="brand-tagline">집에서도 안전하게, 오늘 할 운동만 선명하게.</p>
+          </div>
+        </div>
+        <div id="app-header-actions" class="app-actions"></div>
+      </header>
+      <div id="root"></div>
+      <script type="module" src="/src/main.tsx"></script>
+    </div>
   </body>
 </html>

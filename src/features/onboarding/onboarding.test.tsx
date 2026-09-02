@@ -5,12 +5,13 @@ import { App } from "../../App"
 import { APP_STORAGE_KEY } from "../../storage"
 import { MemoryStoragePort } from "../../storage/test-ports"
 import { createCompletedOnboardingState } from "../../test/onboarding-fixtures"
+import { renderInStaticShell } from "../../test/static-shell"
 import { SafetyOnboarding } from "./SafetyOnboarding"
 
 function renderApp(storage: MemoryStoragePort) {
   window.location.hash = "/"
 
-  return render(<App storage={storage} />)
+  return renderInStaticShell(<App storage={storage} />)
 }
 
 describe("safety onboarding", () => {

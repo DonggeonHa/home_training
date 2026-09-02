@@ -1,7 +1,7 @@
-import { Barbell } from "@phosphor-icons/react/Barbell"
 import { Moon } from "@phosphor-icons/react/Moon"
 import { Sun } from "@phosphor-icons/react/Sun"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { AppRoutes, PrimaryNavigation } from "./app/routes"
 import { AppStoreProvider, useAppStore } from "./app/store/provider"
 import { isThemePreference, resolveMotionClass, resolveReducedMotionPreference } from "./app/theme"
@@ -34,81 +34,104 @@ function AppShell({ downloads }: { readonly downloads: DownloadPort }) {
       state.display.prefersReducedMotion,
     ),
   )
+  useAppHostAttributes(state.display.resolvedTheme, motionClass)
+  useMainSkipLink()
 
   return (
     <>
-      {/* biome-ignore lint/a11y/useValidAnchor: skip links are anchors, and the handler repairs browser focus transfer to main. */}
-      <a
-        className="skip-link"
-        href="#main-content"
-        onClick={(event) => {
-          event.preventDefault()
-          document.querySelector<HTMLElement>("#main-content")?.focus()
-        }}
+      <HeaderActions
+        onOpenSafety={() => setSafetyDialogOpen(true)}
+        onThemePreferenceChange={actions.setThemePreference}
+        themePreference={state.display.themePreference}
+      />
+      <PrimaryNavigation />
+      {/* biome-ignore lint/a11y/noNoninteractiveTabindex: main owns the mobile scroll region, so Safari keyboard users need direct focus access. */}
+      <main id="main-content" className="app-main" tabIndex={0}>
+        <AppRoutes downloads={downloads} onWorkoutCompleted={setWorkoutStatus} />
+      </main>
+      <p className="sr-only" role="status">
+        {workoutStatus}
+      </p>
+      <Dialog
+        onOpenChange={setSafetyDialogOpen}
+        open={safetyDialogOpen}
+        title="안전 원칙"
+        triggerLabel="안전 원칙"
       >
-        본문으로 건너뛰기
-      </a>
-      <div
-        className={`app-shell ${motionClass}`}
-        data-testid="app-shell"
-        data-theme={state.display.resolvedTheme}
-      >
-        <header className="app-header">
-          <div className="app-brand">
-            <div className="brand-mark" aria-hidden="true">
-              <Barbell size={28} weight="duotone" />
-            </div>
-            <div>
-              <p className="eyebrow">초보자 저항운동 성장 시스템</p>
-              <span className="brand-title">홈트레이닝 LEVEL UP</span>
-            </div>
-          </div>
-          <div className="app-actions">
-            <Button onClick={() => setSafetyDialogOpen(true)} variant="secondary">
-              안전 원칙
-            </Button>
-            <fieldset className="theme-switcher">
-              <legend className="sr-only">화면 테마</legend>
-              <Sun size={18} weight="duotone" aria-hidden="true" />
-              <select
-                aria-label="테마 선택"
-                onChange={(event) => {
-                  const nextPreference = event.currentTarget.value
-                  if (isThemePreference(nextPreference)) {
-                    actions.setThemePreference(nextPreference)
-                  }
-                }}
-                value={state.display.themePreference}
-              >
-                <option value="system">시스템</option>
-                <option value="light">라이트</option>
-                <option value="dark">다크</option>
-              </select>
-              <Moon size={18} weight="duotone" aria-hidden="true" />
-            </fieldset>
-          </div>
-        </header>
-        <PrimaryNavigation />
-        {/* biome-ignore lint/a11y/noNoninteractiveTabindex: main owns the mobile scroll region, so Safari keyboard users need direct focus access. */}
-        <main id="main-content" className="app-main" tabIndex={0}>
-          <AppRoutes downloads={downloads} onWorkoutCompleted={setWorkoutStatus} />
-        </main>
-        <p className="sr-only" role="status">
-          {workoutStatus}
-        </p>
-        <Dialog
-          onOpenChange={setSafetyDialogOpen}
-          open={safetyDialogOpen}
-          title="안전 원칙"
-          triggerLabel="안전 원칙"
-        >
-          <ul className="safety-list">
-            <li>통증이 있으면 즉시 중단합니다.</li>
-            <li>자세가 흐트러지면 반복을 멈춥니다.</li>
-            <li>호흡은 천천히 이어갑니다.</li>
-          </ul>
-        </Dialog>
-      </div>
+        <ul className="safety-list">
+          <li>통증이 있으면 즉시 중단합니다.</li>
+          <li>자세가 흐트러지면 반복을 멈춥니다.</li>
+          <li>호흡은 천천히 이어갑니다.</li>
+        </ul>
+      </Dialog>
     </>
   )
+}
+
+function HeaderActions({
+  onOpenSafety,
+  onThemePreferenceChange,
+  themePreference,
+}: {
+  readonly onOpenSafety: () => void
+  readonly onThemePreferenceChange: (preference: "system" | "light" | "dark") => void
+  readonly themePreference: "system" | "light" | "dark"
+}) {
+  const actions = (
+    <>
+      <Button onClick={onOpenSafety} variant="secondary">
+        안전 원칙
+      </Button>
+      <fieldset className="theme-switcher">
+        <legend className="sr-only">화면 테마</legend>
+        <Sun size={18} weight="duotone" aria-hidden="true" />
+        <select
+          aria-label="테마 선택"
+          onChange={(event) => {
+            const nextPreference = event.currentTarget.value
+            if (isThemePreference(nextPreference)) {
+              onThemePreferenceChange(nextPreference)
+            }
+          }}
+          value={themePreference}
+        >
+          <option value="system">시스템</option>
+          <option value="light">라이트</option>
+          <option value="dark">다크</option>
+        </select>
+        <Moon size={18} weight="duotone" aria-hidden="true" />
+      </fieldset>
+    </>
+  )
+  const actionHost = document.getElementById("app-header-actions")
+
+  return actionHost === null ? actions : createPortal(actions, actionHost)
+}
+
+function useAppHostAttributes(resolvedTheme: "light" | "dark", motionClass: string): void {
+  useEffect(() => {
+    const appHost = document.getElementById("app-host")
+    if (appHost === null) {
+      return
+    }
+
+    appHost.setAttribute("data-theme", resolvedTheme)
+    appHost.setAttribute("data-testid", "app-shell")
+    appHost.classList.toggle("motion-reduce", motionClass === "motion-reduce")
+    appHost.classList.toggle("motion-ok", motionClass === "motion-ok")
+  }, [motionClass, resolvedTheme])
+}
+
+function useMainSkipLink(): void {
+  useEffect(() => {
+    const skipLink = document.querySelector<HTMLAnchorElement>(".skip-link")
+    const focusMain = (event: MouseEvent) => {
+      event.preventDefault()
+      document.querySelector<HTMLElement>("#main-content")?.focus()
+    }
+
+    skipLink?.addEventListener("click", focusMain)
+
+    return () => skipLink?.removeEventListener("click", focusMain)
+  }, [])
 }

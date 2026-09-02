@@ -106,6 +106,13 @@ All spacing derives from 4px.
 - Accessibility: Korean `lang`, semantic landmarks, one h1, no icon-only unlabeled controls.
 - Motion: no automatic motion in the foundation root.
 
+### Persistent Header
+
+- Structure: static `index.html` shell with skip link, `#app-host`, semantic header, brand H1, tagline, header actions mount, and React root.
+- Typography: brand H1 uses H3 scale; the stable Korean tagline uses H1 to Display scale so first paint has a meaningful LCP candidate.
+- Behavior: React may portal controls into the header action mount and sync theme or motion attributes on `#app-host`, but it must not replace or duplicate the static brand header.
+- Accessibility: the static skip link targets `#main-content`; React intercepts activation to focus main without changing the route hash.
+
 ### Primary Navigation
 
 - Structure: five route links in a semantic navigation landmark.

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react"
+import { cleanup, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { App } from "../../App"
@@ -7,6 +7,7 @@ import { exportStoredState } from "../../storage/backup"
 import type { StoredState } from "../../storage/schemas"
 import { MemoryDownloadPort, MemoryStoragePort } from "../../storage/test-ports"
 import { createCompletedOnboardingState } from "../../test/onboarding-fixtures"
+import { renderInStaticShell } from "../../test/static-shell"
 
 function renderProductionApp(
   path: string,
@@ -15,7 +16,7 @@ function renderProductionApp(
 ) {
   window.location.hash = path
 
-  return render(<App downloads={downloads} storage={storage} />)
+  return renderInStaticShell(<App downloads={downloads} storage={storage} />)
 }
 
 function createSeededStorage(state = createCompletedOnboardingState()) {

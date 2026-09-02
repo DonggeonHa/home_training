@@ -18,6 +18,10 @@
   color: var(--text-primary);
 }
 
+#root {
+  display: contents;
+}
+
 .app-header,
 .app-main {
   width: min(100% - var(--space-8), 1184px);
@@ -38,6 +42,12 @@
   min-width: 0;
   align-items: center;
   gap: var(--space-4);
+}
+
+.brand-copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
 }
 
 .brand-mark {
@@ -67,6 +77,16 @@
   font-size: 1.25rem;
   font-weight: 750;
   line-height: 1.15;
+}
+
+.brand-tagline {
+  max-width: 24ch;
+  color: var(--text-primary);
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow-wrap: keep-all;
+  word-break: keep-all;
 }
 
 .app-actions {
@@ -177,6 +197,12 @@
 @media (min-width: 768px) {
   .brand-title {
     font-size: 1.5rem;
+  }
+
+  .brand-tagline {
+    max-width: 32ch;
+    font-size: 2.5rem;
+    line-height: 1.15;
   }
 
   .route-page h1 {
